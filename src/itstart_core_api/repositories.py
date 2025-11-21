@@ -28,6 +28,8 @@ class BaseRepository:
 
 
 class PublicationRepository(BaseRepository):
+    model = Publication
+
     async def get(self, pub_id: UUID) -> Optional[Publication]:
         result = await self.session.execute(select(Publication).where(Publication.id == pub_id))
         return result.scalar_one_or_none()
@@ -46,9 +48,25 @@ class PublicationRepository(BaseRepository):
 
 
 class TagRepository(BaseRepository):
+    model = Tag
+
+    def base_query(self):
+        return select(Tag)
+
     async def get_by_names(self, names: Iterable[str]) -> list[Tag]:
         result = await self.session.execute(select(Tag).where(Tag.name.in_(list(names))))
         return list(result.scalars())
+
+    async def get_by_name_category(self, name: str, category: TagCategory) -> Optional[Tag]:
+        result = await self.session.execute(
+            select(Tag).where(Tag.name == name, Tag.category == category)
+        )
+        return result.scalar_one_or_none()
+
+    def create(self, name: str, category: TagCategory) -> Tag:
+        tag = Tag(name=name, category=category)
+        self.session.add(tag)
+        return tag
 
 
 class TgUserRepository(BaseRepository):
