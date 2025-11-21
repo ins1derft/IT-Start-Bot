@@ -43,6 +43,8 @@ class Publication(Base):
     deadline_at = Column(DateTime)
     contact_info = Column(Text)
     contact_info_encrypted = Column(LargeBinary)
+    status = Column(Enum("new", "declined", "ready", "sent", name="publication_status"), nullable=False, default="new")
+    decline_reason = Column(Text)
 
     tags = relationship("PublicationTag", cascade="all, delete-orphan", back_populates="publication")
 

@@ -43,6 +43,9 @@ class PublicationRepository(BaseRepository):
         )
         return list(result.scalars())
 
+    def base_query(self):
+        return select(Publication)
+
     async def add_tags(self, pub_id: UUID, tag_ids: Iterable[UUID]) -> None:
         for tag_id in tag_ids:
             self.session.add(PublicationTag(publication_id=pub_id, tag_id=tag_id))

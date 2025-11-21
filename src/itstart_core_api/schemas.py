@@ -34,6 +34,8 @@ class PublicationRead(Model):
     deadline_at: Optional[datetime] = None
     contact_info: Optional[str] = None
     tags: List[TagRead] = Field(default_factory=list)
+    status: str
+    decline_reason: Optional[str] = None
 
 
 class TgUserRead(Model):

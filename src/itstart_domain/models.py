@@ -56,6 +56,8 @@ class Publication(BaseModel):
     contact_info: Optional[str] = None
     contact_info_encrypted: Optional[bytes] = None
     tags: Sequence[Tag] = Field(default_factory=tuple)
+    status: str = "new"
+    decline_reason: Optional[str] = None
 
 
 class TgUser(BaseModel):

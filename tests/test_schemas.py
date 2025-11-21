@@ -17,6 +17,7 @@ def test_publication_read_from_kwargs():
         vacancy_created_at=datetime.datetime.utcnow(),
         is_edited=False,
         is_declined=False,
+        status="new",
     )
     assert pub.title == "T"
     assert pub.tags == []
