@@ -37,16 +37,22 @@ class TokenResponse(BaseModel):
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-def _create_access_token(settings: Settings, subject: str, expires_delta: timedelta | None = None) -> str:
+def _create_access_token(
+    settings: Settings, subject: str, expires_delta: timedelta | None = None
+) -> str:
     to_encode = {"sub": subject, "iat": datetime.utcnow(), "typ": "access"}
     expire = datetime.utcnow() + (expires_delta or timedelta(seconds=settings.access_token_ttl_sec))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.secret_key, algorithm="HS256")
 
 
-def _create_refresh_token(settings: Settings, subject: str, expires_delta: timedelta | None = None) -> str:
+def _create_refresh_token(
+    settings: Settings, subject: str, expires_delta: timedelta | None = None
+) -> str:
     to_encode = {"sub": subject, "iat": datetime.utcnow(), "typ": "refresh"}
-    expire = datetime.utcnow() + (expires_delta or timedelta(seconds=settings.refresh_token_ttl_sec))
+    expire = datetime.utcnow() + (
+        expires_delta or timedelta(seconds=settings.refresh_token_ttl_sec)
+    )
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.secret_key, algorithm="HS256")
 
@@ -102,7 +108,9 @@ async def login(
 
     access = _create_access_token(settings, subject=str(user.id))
     refresh = _create_refresh_token(settings, subject=str(user.id))
-    return TokenResponse(access_token=access, refresh_token=refresh, expires_in=settings.access_token_ttl_sec)
+    return TokenResponse(
+        access_token=access, refresh_token=refresh, expires_in=settings.access_token_ttl_sec
+    )
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -118,11 +126,15 @@ async def refresh_token(
             raise ValueError
         subject: str = payload.get("sub")
     except (JWTError, ValueError):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        )
 
     access = _create_access_token(settings, subject=subject)
     refresh = _create_refresh_token(settings, subject=subject)
-    return TokenResponse(access_token=access, refresh_token=refresh, expires_in=settings.access_token_ttl_sec)
+    return TokenResponse(
+        access_token=access, refresh_token=refresh, expires_in=settings.access_token_ttl_sec
+    )
 
 
 class ChangePasswordRequest(BaseModel):

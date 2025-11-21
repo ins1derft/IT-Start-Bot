@@ -48,7 +48,9 @@ async def test_tags_crud(monkeypatch):
     headers = {"Authorization": f"Bearer {token}"}
 
     # create tag
-    resp = client.post("/admin/tags", headers=headers, params={"name": "remote", "category": "format"})
+    resp = client.post(
+        "/admin/tags", headers=headers, params={"name": "remote", "category": "format"}
+    )
     assert resp.status_code == 201
     tag_id = resp.json()["id"]
 
@@ -58,7 +60,9 @@ async def test_tags_crud(monkeypatch):
     assert len(resp.json()) == 1
 
     # update
-    resp = client.patch(f"/admin/tags/{tag_id}", headers=headers, params={"name": "office", "category": "format"})
+    resp = client.patch(
+        f"/admin/tags/{tag_id}", headers=headers, params={"name": "office", "category": "format"}
+    )
     assert resp.status_code == 200
     assert resp.json()["name"] == "office"
 

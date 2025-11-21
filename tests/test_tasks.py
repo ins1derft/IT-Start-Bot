@@ -42,7 +42,9 @@ async def test_send_publications_marks_sent(monkeypatch, tmp_path):
         await session.commit()
 
     # monkeypatch send telegram to noop
-    monkeypatch.setattr("itstart_core_api.tasks._send_telegram_message", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        "itstart_core_api.tasks._send_telegram_message", lambda *args, **kwargs: None
+    )
 
     # patch settings to use same db url
     monkeypatch.setattr("itstart_core_api.tasks.get_settings", lambda: settings)
@@ -83,7 +85,9 @@ async def test_deadline_reminders_flag(monkeypatch, tmp_path):
         session.add(pub)
         await session.commit()
 
-    monkeypatch.setattr("itstart_core_api.tasks._send_telegram_message", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        "itstart_core_api.tasks._send_telegram_message", lambda *args, **kwargs: None
+    )
 
     monkeypatch.setattr("itstart_core_api.tasks.get_settings", lambda: settings)
     await send_deadline_reminders()

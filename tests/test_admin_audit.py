@@ -16,7 +16,13 @@ async def test_admin_audit_log():
     async with Session() as session:
         repo = AdminAuditRepository(session)
         admin_id = uuid4()
-        repo.log(admin_id=admin_id, action="test", target_type="admin_user", target_id=uuid4(), details="demo")
+        repo.log(
+            admin_id=admin_id,
+            action="test",
+            target_type="admin_user",
+            target_id=uuid4(),
+            details="demo",
+        )
         await session.commit()
         rows = (await session.execute(models.AdminAuditLog.__table__.select())).fetchall()
         assert len(rows) == 1

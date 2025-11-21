@@ -52,7 +52,13 @@ async def create_parser(
     )
     await session.commit()
     await session.refresh(parser)
-    audit.log(admin_id=current.id, action="create_parser", target_type="parser", target_id=parser.id, details=f"type={type}")
+    audit.log(
+        admin_id=current.id,
+        action="create_parser",
+        target_type="parser",
+        target_id=parser.id,
+        details=f"type={type}",
+    )
     await session.commit()
     return parser
 
@@ -87,7 +93,13 @@ async def update_parser(
     )
     await session.commit()
     await session.refresh(parser)
-    audit.log(admin_id=current.id, action="update_parser", target_type="parser", target_id=parser.id, details="patched")
+    audit.log(
+        admin_id=current.id,
+        action="update_parser",
+        target_type="parser",
+        target_id=parser.id,
+        details="patched",
+    )
     await session.commit()
     return parser
 
@@ -107,7 +119,13 @@ async def enable_parser(
         raise HTTPException(status_code=404, detail="Not found")
     parser.is_active = True
     await session.commit()
-    audit.log(admin_id=current.id, action="enable_parser", target_type="parser", target_id=parser.id, details=None)
+    audit.log(
+        admin_id=current.id,
+        action="enable_parser",
+        target_type="parser",
+        target_id=parser.id,
+        details=None,
+    )
     await session.commit()
     return None
 
@@ -127,6 +145,12 @@ async def disable_parser(
         raise HTTPException(status_code=404, detail="Not found")
     parser.is_active = False
     await session.commit()
-    audit.log(admin_id=current.id, action="disable_parser", target_type="parser", target_id=parser.id, details=None)
+    audit.log(
+        admin_id=current.id,
+        action="disable_parser",
+        target_type="parser",
+        target_id=parser.id,
+        details=None,
+    )
     await session.commit()
     return None

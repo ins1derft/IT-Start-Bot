@@ -72,7 +72,12 @@ async def test_publications_crud_flow(monkeypatch):
     resp = client.patch(
         f"/admin/publications/{pub.id}",
         headers=headers,
-        params={"title": "New title", "contact_info": "mail", "deadline_at": deadline, "status": "ready"},
+        params={
+            "title": "New title",
+            "contact_info": "mail",
+            "deadline_at": deadline,
+            "status": "ready",
+        },
     )
     assert resp.status_code == 200
     data = resp.json()
@@ -80,7 +85,9 @@ async def test_publications_crud_flow(monkeypatch):
     assert data["title"] == "New title"
     assert data["editor_id"] is None or isinstance(data.get("editor_id"), str)
 
-    resp = client.post(f"/admin/publications/{pub.id}/decline", headers=headers, params={"reason": "bad"})
+    resp = client.post(
+        f"/admin/publications/{pub.id}/decline", headers=headers, params={"reason": "bad"}
+    )
     assert resp.status_code == 204
 
     resp = client.post(f"/admin/publications/{pub.id}/approve-and-send", headers=headers)

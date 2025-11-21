@@ -9,6 +9,8 @@ except ImportError:  # Python 3.10 fallback
 
     class StrEnum(str, Enum):  # type: ignore
         pass
+
+
 from collections.abc import Sequence
 from uuid import UUID
 

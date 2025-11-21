@@ -55,9 +55,13 @@ async def update_publication_schedule(
     if payload.job_interval_minutes is not None:
         await repo.upsert(PublicationType.job, interval_minutes=payload.job_interval_minutes)
     if payload.internship_interval_minutes is not None:
-        await repo.upsert(PublicationType.internship, interval_minutes=payload.internship_interval_minutes)
+        await repo.upsert(
+            PublicationType.internship, interval_minutes=payload.internship_interval_minutes
+        )
     if payload.conference_interval_minutes is not None:
-        await repo.upsert(PublicationType.conference, interval_minutes=payload.conference_interval_minutes)
+        await repo.upsert(
+            PublicationType.conference, interval_minutes=payload.conference_interval_minutes
+        )
 
     await session.commit()
     result = await session.execute(repo.base_query())

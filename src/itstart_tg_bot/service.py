@@ -23,7 +23,9 @@ def split_tokens(text: str) -> list[str]:
     return [t.strip().lower() for t in text.replace(",", " ").split() if t.strip()]
 
 
-def parse_tokens(tokens: Iterable[str], tags: list) -> tuple[list[PublicationType], list[UUID], list[str]]:
+def parse_tokens(
+    tokens: Iterable[str], tags: list
+) -> tuple[list[PublicationType], list[UUID], list[str]]:
     pub_types = []
     tag_ids = []
     unknown = []
@@ -107,14 +109,19 @@ async def unsubscribe_tokens(session, tg_id: int, tokens: Iterable[str]):
         await session.execute(
             SubscriptionRepository(session)
             .model.__table__.delete()
-            .where(SubscriptionRepository(session).model.user_id == user.id, SubscriptionRepository(session).model.publication_type.in_(pub_types))
+            .where(
+                SubscriptionRepository(session).model.user_id == user.id,
+                SubscriptionRepository(session).model.publication_type.in_(pub_types),
+            )
         )
         removed_types = pub_types
 
     if tag_ids:
         # delete from user_preferences
         await session.execute(
-            UserPreferenceRepository(session).model.__table__.delete().where(
+            UserPreferenceRepository(session)
+            .model.__table__.delete()
+            .where(
                 UserPreferenceRepository(session).model.user_id == user.id,
                 UserPreferenceRepository(session).model.tag_id.in_(tag_ids),
             )
@@ -133,7 +140,10 @@ async def get_preferences(session, tg_id: int):
     q = (
         TagRepository(session)
         .base_query()
-        .join(UserPreferenceRepository(session).model, UserPreferenceRepository(session).model.tag_id == TagRepository(session).model.id)
+        .join(
+            UserPreferenceRepository(session).model,
+            UserPreferenceRepository(session).model.tag_id == TagRepository(session).model.id,
+        )
         .where(UserPreferenceRepository(session).model.user_id == user.id)
     )
     rows = (await session.execute(q)).scalars().all()
@@ -163,16 +173,22 @@ async def search_publications(session, pub_type: PublicationType, tokens: Iterab
         cache_client = None
 
     repo = PublicationRepository(session)
-    q = repo.base_query().where(repo.model.type == pub_type, repo.model.is_declined == False)  # noqa: E712
+    q = repo.base_query().where(repo.model.type == pub_type, repo.model.is_declined.is_(False))
     if tag_ids:
-        q = q.join(models.PublicationTag, models.PublicationTag.publication_id == repo.model.id).where(models.PublicationTag.tag_id.in_(tag_ids))
+        q = q.join(
+            models.PublicationTag, models.PublicationTag.publication_id == repo.model.id
+        ).where(models.PublicationTag.tag_id.in_(tag_ids))
     q = q.order_by(repo.model.created_at.desc()).limit(10)
     result = await session.execute(q)
     pubs = list(result.scalars())
 
     if cache_client and cache_key:
         try:
-            await cache_client.set(cache_key, json.dumps([{"title": p.title, "company": p.company, "url": p.url} for p in pubs]), ex=300)
+            await cache_client.set(
+                cache_key,
+                json.dumps([{"title": p.title, "company": p.company, "url": p.url} for p in pubs]),
+                ex=300,
+            )
         except Exception:
             pass
     return pubs
@@ -188,7 +204,15 @@ async def block_user(session, tg_id: int) -> bool:
     user.is_active = False
     user.refused_at = datetime.datetime.utcnow()
 
-    await session.execute(UserPreferenceRepository(session).model.__table__.delete().where(UserPreferenceRepository(session).model.user_id == user.id))
-    await session.execute(SubscriptionRepository(session).model.__table__.delete().where(SubscriptionRepository(session).model.user_id == user.id))
+    await session.execute(
+        UserPreferenceRepository(session)
+        .model.__table__.delete()
+        .where(UserPreferenceRepository(session).model.user_id == user.id)
+    )
+    await session.execute(
+        SubscriptionRepository(session)
+        .model.__table__.delete()
+        .where(SubscriptionRepository(session).model.user_id == user.id)
+    )
     await session.commit()
     return True

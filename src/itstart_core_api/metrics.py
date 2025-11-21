@@ -25,7 +25,9 @@ def middleware_factory():
         start = time.perf_counter()
         response = await call_next(request)
         duration = time.perf_counter() - start
-        REQUEST_COUNT.labels(path=request.url.path, method=request.method, status=response.status_code).inc()
+        REQUEST_COUNT.labels(
+            path=request.url.path, method=request.method, status=response.status_code
+        ).inc()
         REQUEST_LATENCY.observe(duration)
         return response
 

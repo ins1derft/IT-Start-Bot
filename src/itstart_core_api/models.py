@@ -43,10 +43,16 @@ class Publication(Base):
     contact_info = Column(Text)
     contact_info_encrypted = Column(LargeBinary)
     deadline_notified = Column(Boolean, nullable=False, default=False)
-    status = Column(Enum("new", "declined", "ready", "sent", name="publication_status"), nullable=False, default="new")
+    status = Column(
+        Enum("new", "declined", "ready", "sent", name="publication_status"),
+        nullable=False,
+        default="new",
+    )
     decline_reason = Column(Text)
 
-    tags = relationship("PublicationTag", cascade="all, delete-orphan", back_populates="publication")
+    tags = relationship(
+        "PublicationTag", cascade="all, delete-orphan", back_populates="publication"
+    )
 
 
 class Tag(Base):
@@ -57,7 +63,9 @@ class Tag(Base):
     name = Column(String(255), nullable=False)
     category = Column(Enum(TagCategory, name="tag_category"), nullable=False)
 
-    publications = relationship("PublicationTag", cascade="all, delete-orphan", back_populates="tag")
+    publications = relationship(
+        "PublicationTag", cascade="all, delete-orphan", back_populates="tag"
+    )
 
 
 class PublicationTag(Base):
@@ -95,7 +103,9 @@ class TgUserSubscription(Base):
     __table_args__ = (UniqueConstraint("user_id", "publication_type", name="uq_sub_user_type"),)
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("tg_user.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("tg_user.id", ondelete="CASCADE"), nullable=False
+    )
     publication_type = Column(Enum(PublicationType, name="publication_type"), nullable=False)
     deadline_reminder = Column(Boolean, nullable=False, default=True)
 
@@ -122,7 +132,9 @@ class TgUserSubscriptionTag(Base):
 class UserPreference(Base):
     __tablename__ = "user_preferences"
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("tg_user.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("tg_user.id", ondelete="CASCADE"), primary_key=True
+    )
     tag_id = Column(UUID(as_uuid=True), ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True)
 
     user = relationship("TgUser", back_populates="preferences")
@@ -161,7 +173,9 @@ class ParsingResult(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     date = Column(DateTime, nullable=False)
-    parser_id = Column(UUID(as_uuid=True), ForeignKey("parser.id", ondelete="CASCADE"), nullable=False)
+    parser_id = Column(
+        UUID(as_uuid=True), ForeignKey("parser.id", ondelete="CASCADE"), nullable=False
+    )
     success = Column(Boolean, nullable=False)
     received_amount = Column(Integer, nullable=False)
 
@@ -198,4 +212,8 @@ Index("idx_publication_type_created_at", Publication.type, Publication.created_a
 Index("idx_publication_tags_tag", PublicationTag.tag_id)
 Index("idx_parsing_result_parser_date", ParsingResult.parser_id, ParsingResult.date)
 Index("idx_tg_user_refused_at", TgUser.refused_at)
-Index("idx_tg_user_subscriptions_user_type", TgUserSubscription.user_id, TgUserSubscription.publication_type)
+Index(
+    "idx_tg_user_subscriptions_user_type",
+    TgUserSubscription.user_id,
+    TgUserSubscription.publication_type,
+)

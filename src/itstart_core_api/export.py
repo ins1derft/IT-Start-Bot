@@ -30,7 +30,9 @@ async def export_publications(
 
     q = select(Publication)
     if date_from:
-        q = q.where(Publication.created_at >= datetime.datetime.combine(date_from, datetime.time.min))
+        q = q.where(
+            Publication.created_at >= datetime.datetime.combine(date_from, datetime.time.min)
+        )
     if date_to:
         q = q.where(Publication.created_at <= datetime.datetime.combine(date_to, datetime.time.max))
     pubs = (await session.execute(q)).scalars().all()

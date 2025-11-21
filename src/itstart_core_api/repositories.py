@@ -37,7 +37,8 @@ class PublicationRepository(BaseRepository):
 
     async def list_recent(self, pub_type: str, limit: int = 10) -> list[Publication]:
         result = await self.session.execute(
-            select(Publication).where(Publication.type == pub_type, Publication.is_declined == False)  # noqa: E712
+            select(Publication)
+            .where(Publication.type == pub_type, Publication.is_declined == False)  # noqa: E712
             .order_by(Publication.created_at.desc())
             .limit(limit)
         )
@@ -96,7 +97,10 @@ class TgUserRepository(BaseRepository):
 
 class SubscriptionRepository(BaseRepository):
     model = TgUserSubscription
-    async def upsert_subscription(self, user_id: UUID, pub_type: str, deadline_reminder: bool = True) -> TgUserSubscription:
+
+    async def upsert_subscription(
+        self, user_id: UUID, pub_type: str, deadline_reminder: bool = True
+    ) -> TgUserSubscription:
         result = await self.session.execute(
             select(TgUserSubscription).where(
                 TgUserSubscription.user_id == user_id,
@@ -107,7 +111,9 @@ class SubscriptionRepository(BaseRepository):
         if sub:
             sub.deadline_reminder = deadline_reminder
             return sub
-        sub = TgUserSubscription(user_id=user_id, publication_type=pub_type, deadline_reminder=deadline_reminder)
+        sub = TgUserSubscription(
+            user_id=user_id, publication_type=pub_type, deadline_reminder=deadline_reminder
+        )
         self.session.add(sub)
         return sub
 
@@ -118,6 +124,7 @@ class SubscriptionRepository(BaseRepository):
 
 class UserPreferenceRepository(BaseRepository):
     model = UserPreference
+
     async def add(self, user_id: UUID, tag_ids: Iterable[UUID]) -> None:
         for tag_id in tag_ids:
             self.session.add(UserPreference(user_id=user_id, tag_id=tag_id))
@@ -134,7 +141,9 @@ class AdminUserRepository(BaseRepository):
     async def get(self, user_id: UUID) -> AdminUser | None:
         return await self.session.get(AdminUser, user_id)
 
-    def create(self, username: str, password_hash: str, role: AdminRole, is_active: bool = True) -> AdminUser:
+    def create(
+        self, username: str, password_hash: str, role: AdminRole, is_active: bool = True
+    ) -> AdminUser:
         user = AdminUser(
             username=username,
             password_hash=password_hash,
@@ -163,7 +172,14 @@ class AdminUserRepository(BaseRepository):
 
 
 class AdminAuditRepository(BaseRepository):
-    def log(self, admin_id: UUID, action: str, target_type: str, target_id: UUID | None, details: str | None = None) -> AdminAuditLog:
+    def log(
+        self,
+        admin_id: UUID,
+        action: str,
+        target_type: str,
+        target_id: UUID | None,
+        details: str | None = None,
+    ) -> AdminAuditLog:
         entry = AdminAuditLog(
             admin_id=admin_id,
             action=action,
@@ -174,15 +190,23 @@ class AdminAuditRepository(BaseRepository):
         self.session.add(entry)
         return entry
 
-    def create(self, username: str, password_hash: str, role: AdminRole, is_active: bool = True) -> AdminUser:
-        user = AdminUser(username=username, password_hash=password_hash, role=role, is_active=is_active, created_at=datetime.datetime.utcnow())
+    def create(
+        self, username: str, password_hash: str, role: AdminRole, is_active: bool = True
+    ) -> AdminUser:
+        user = AdminUser(
+            username=username,
+            password_hash=password_hash,
+            role=role,
+            is_active=is_active,
+            created_at=datetime.datetime.utcnow(),
+        )
         self.session.add(user)
         return user
 
 
 class ParserRepository(BaseRepository):
     async def list_active(self) -> list[Parser]:
-        result = await self.session.execute(select(Parser).where(Parser.is_active == True))  # noqa: E712
+        result = await self.session.execute(select(Parser).where(Parser.is_active.is_(True)))
         return list(result.scalars())
 
     def base_query(self):
@@ -244,7 +268,11 @@ class PublicationScheduleRepository(BaseRepository):
         return select(PublicationSchedule)
 
     async def get_by_type(self, publication_type: PublicationType) -> PublicationSchedule | None:
-        result = await self.session.execute(select(PublicationSchedule).where(PublicationSchedule.publication_type == publication_type))
+        result = await self.session.execute(
+            select(PublicationSchedule).where(
+                PublicationSchedule.publication_type == publication_type
+            )
+        )
         return result.scalar_one_or_none()
 
     async def upsert(

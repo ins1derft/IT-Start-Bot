@@ -51,7 +51,9 @@ def _build_dispatcher() -> Dispatcher:
         )
 
     @router.message(Command("subscribe"))
-    async def cmd_subscribe(message: types.Message, command: CommandObject, state: FSMContext) -> None:
+    async def cmd_subscribe(
+        message: types.Message, command: CommandObject, state: FSMContext
+    ) -> None:
         settings = get_settings()
         engine = build_engine(settings)
         Session = build_session_maker(engine)
@@ -60,7 +62,9 @@ def _build_dispatcher() -> Dispatcher:
             tokens = split_tokens(args)
             async with Session() as session:
                 result = await subscribe_tokens(session, message.from_user.id, tokens)
-            await message.answer(f"Подписка сохранена. Типы: {result['types']}; теги: {len(result['tags'])}. Неизвестные: {result['unknown']}")
+            await message.answer(
+                f"Подписка сохранена. Типы: {result['types']}; теги: {len(result['tags'])}. Неизвестные: {result['unknown']}"
+            )
         else:
             await state.set_state(SubscribeStates.awaiting_tags)
             await message.answer("Введите теги/типы для подписки (через пробел).")
@@ -74,7 +78,9 @@ def _build_dispatcher() -> Dispatcher:
         async with Session() as session:
             result = await subscribe_tokens(session, message.from_user.id, tokens)
         await state.clear()
-        await message.answer(f"Подписка сохранена. Типы: {result['types']}; теги: {len(result['tags'])}. Неизвестные: {result['unknown']}")
+        await message.answer(
+            f"Подписка сохранена. Типы: {result['types']}; теги: {len(result['tags'])}. Неизвестные: {result['unknown']}"
+        )
 
     @router.message(Command("unsubscribe"))
     async def cmd_unsubscribe(message: types.Message, command: CommandObject) -> None:
@@ -84,7 +90,9 @@ def _build_dispatcher() -> Dispatcher:
         tokens = split_tokens(command.args or "")
         async with Session() as session:
             result = await unsubscribe_tokens(session, message.from_user.id, tokens)
-        await message.answer(f"Отписка выполнена. Типы: {result['removed_types']}; теги: {result['removed_tags']}; неизвестные: {result['unknown']}")
+        await message.answer(
+            f"Отписка выполнена. Типы: {result['removed_types']}; теги: {result['removed_tags']}; неизвестные: {result['unknown']}"
+        )
 
     @router.message(Command("preferences"))
     async def cmd_preferences(message: types.Message) -> None:
@@ -101,7 +109,9 @@ def _build_dispatcher() -> Dispatcher:
             lines.append(f"{cat}: {', '.join(names)}")
         await message.answer("\n".join(lines))
 
-    async def handle_search(message: types.Message, pub_type: PublicationType, tokens: list[str]) -> None:
+    async def handle_search(
+        message: types.Message, pub_type: PublicationType, tokens: list[str]
+    ) -> None:
         settings = get_settings()
         engine = build_engine(settings)
         Session = build_session_maker(engine)
@@ -133,7 +143,11 @@ def _build_dispatcher() -> Dispatcher:
     @router.my_chat_member()
     async def handle_block(update: types.ChatMemberUpdated) -> None:
         # React to user blocking the bot or leaving
-        if update.new_chat_member.status not in {ChatMemberStatus.KICKED, ChatMemberStatus.LEFT, ChatMemberStatus.BANNED}:
+        if update.new_chat_member.status not in {
+            ChatMemberStatus.KICKED,
+            ChatMemberStatus.LEFT,
+            ChatMemberStatus.BANNED,
+        }:
             return
         settings = get_settings()
         engine = build_engine(settings)

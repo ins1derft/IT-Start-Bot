@@ -47,7 +47,9 @@ async def _collect_pub_tags(session, pub_id) -> list[str]:
     return [r[0] for r in rows.all()]
 
 
-async def _eligible_subscriptions(session, pub: Publication) -> Iterable[tuple[TgUserSubscription, TgUser]]:
+async def _eligible_subscriptions(
+    session, pub: Publication
+) -> Iterable[tuple[TgUserSubscription, TgUser]]:
     # fetch publication tags once
     pub_tag_rows = await session.execute(
         PublicationTag.__table__.select().where(PublicationTag.publication_id == pub.id)
@@ -66,7 +68,9 @@ async def _eligible_subscriptions(session, pub: Publication) -> Iterable[tuple[T
     for sub, user in subs_result:
         # get tags for subscription
         tags_rows = await session.execute(
-            TgUserSubscriptionTag.__table__.select().where(TgUserSubscriptionTag.subscription_id == sub.id)
+            TgUserSubscriptionTag.__table__.select().where(
+                TgUserSubscriptionTag.subscription_id == sub.id
+            )
         )
         required = {t.tag_id for t in tags_rows}
         if required and not required.issubset(pub_tag_ids):
@@ -131,7 +135,10 @@ async def send_deadline_reminders() -> None:
         for pub in pubs:
             subs = await _eligible_subscriptions(session, pub)
             tags = await _collect_pub_tags(session, pub.id)
-            text = _format_publication(pub, tags, updated=False) + "\nНапоминание о дедлайне через 3 дня."
+            text = (
+                _format_publication(pub, tags, updated=False)
+                + "\nНапоминание о дедлайне через 3 дня."
+            )
             for sub, user in subs:
                 if getattr(sub, "deadline_reminder", True):
                     await _send_telegram_message(settings.bot_token, user.tg_id, text)
@@ -145,5 +152,7 @@ async def cleanup_old_publications(days: int = 90) -> None:
     Session = build_session_maker(engine)
     threshold = datetime.datetime.utcnow() - datetime.timedelta(days=days)
     async with Session() as session:
-        await session.execute(Publication.__table__.delete().where(Publication.created_at < threshold))
+        await session.execute(
+            Publication.__table__.delete().where(Publication.created_at < threshold)
+        )
         await session.commit()

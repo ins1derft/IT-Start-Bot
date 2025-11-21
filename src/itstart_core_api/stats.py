@@ -21,7 +21,9 @@ from .models import (
 router = APIRouter(prefix="/admin/stats", tags=["stats"])
 
 
-def _date_range_filter(query, column, date_from: datetime.date | None, date_to: datetime.date | None):
+def _date_range_filter(
+    query, column, date_from: datetime.date | None, date_to: datetime.date | None
+):
     if date_from:
         query = query.where(column >= datetime.datetime.combine(date_from, datetime.time.min))
     if date_to:
@@ -40,15 +42,23 @@ async def users_stats(
         raise HTTPException(status_code=403, detail="Forbidden")
 
     q_sub = select(func.count()).select_from(TgUser)
-    q_sub = _date_range_filter(q_sub.where(TgUser.register_at.is_not(None)), TgUser.register_at, date_from, date_to)
+    q_sub = _date_range_filter(
+        q_sub.where(TgUser.register_at.is_not(None)), TgUser.register_at, date_from, date_to
+    )
 
     q_unsub = select(func.count()).select_from(TgUser)
-    q_unsub = _date_range_filter(q_unsub.where(TgUser.refused_at.is_not(None)), TgUser.refused_at, date_from, date_to)
+    q_unsub = _date_range_filter(
+        q_unsub.where(TgUser.refused_at.is_not(None)), TgUser.refused_at, date_from, date_to
+    )
 
     subs = (await session.execute(q_sub)).scalar_one()
     unsubs = (await session.execute(q_unsub)).scalar_one()
 
-    active = (await session.execute(select(func.count()).select_from(TgUser).where(TgUser.refused_at == None))).scalar_one()  # noqa: E711
+    active = (
+        await session.execute(
+            select(func.count()).select_from(TgUser).where(TgUser.refused_at.is_(None))
+        )
+    ).scalar_one()
 
     return {
         "subscribed": subs,
@@ -116,7 +126,9 @@ async def publications_per_day(
     if current.role not in (AdminRole.admin, AdminRole.moderator):
         raise HTTPException(status_code=403, detail="Forbidden")
 
-    q = select(func.date(Publication.created_at).label("day"), func.count().label("count")).group_by("day")
+    q = select(
+        func.date(Publication.created_at).label("day"), func.count().label("count")
+    ).group_by("day")
     q = _date_range_filter(q, Publication.created_at, date_from, date_to)
     rows = (await session.execute(q)).all()
     return [{"date": str(day), "count": count} for day, count in rows]

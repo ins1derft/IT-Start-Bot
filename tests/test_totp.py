@@ -66,7 +66,9 @@ async def test_setup_confirm_login_with_totp(monkeypatch):
     resp = client.post("/auth/login", json={"username": "root", "password": "pass"})
     assert resp.status_code == 401
     code = pyotp.TOTP(secret).now()
-    resp = client.post("/auth/login", json={"username": "root", "password": "pass", "otp_code": code})
+    resp = client.post(
+        "/auth/login", json={"username": "root", "password": "pass", "otp_code": code}
+    )
     assert resp.status_code == 200
 
 

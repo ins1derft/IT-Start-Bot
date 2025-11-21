@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     bot_token: str = "change-me"
     redis_url: str = "redis://localhost:6379/0"
     database_url: str = Field(
-        "postgresql+asyncpg://itstart:itstart@localhost:5432/itstart", validation_alias="POSTGRES_DSN"
+        "postgresql+asyncpg://itstart:itstart@localhost:5432/itstart",
+        validation_alias="POSTGRES_DSN",
     )
     sentry_dsn: str | None = None
     bot_channel_id: str | None = None

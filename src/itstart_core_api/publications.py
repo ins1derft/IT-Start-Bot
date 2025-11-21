@@ -73,7 +73,11 @@ async def list_publications(
 
 
 @router.get("/{pub_id}", response_model=PublicationRead)
-async def get_publication(pub_id: UUID, session: AsyncSession = Depends(get_db_session), current=Depends(get_current_admin)):
+async def get_publication(
+    pub_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+    current=Depends(get_current_admin),
+):
     repo = PublicationRepository(session)
     pub = await repo.get(pub_id)
     if not pub:
@@ -113,7 +117,13 @@ async def update_publication(
     pub.updated_at = datetime.datetime.utcnow()
     await session.commit()
     await session.refresh(pub)
-    audit.log(admin_id=current.id, action="update_publication", target_type="publication", target_id=pub.id, details=f"status={status}")
+    audit.log(
+        admin_id=current.id,
+        action="update_publication",
+        target_type="publication",
+        target_id=pub.id,
+        details=f"status={status}",
+    )
     await session.commit()
     return _to_pub_read(pub)
 
@@ -135,7 +145,13 @@ async def decline_publication(
     pub.decline_reason = reason
     pub.editor_id = current.id
     await session.commit()
-    audit.log(admin_id=current.id, action="decline_publication", target_type="publication", target_id=pub.id, details=reason)
+    audit.log(
+        admin_id=current.id,
+        action="decline_publication",
+        target_type="publication",
+        target_id=pub.id,
+        details=reason,
+    )
     await session.commit()
     return None
 
@@ -156,6 +172,12 @@ async def approve_and_send(
     pub.decline_reason = None
     pub.editor_id = current.id
     await session.commit()
-    audit.log(admin_id=current.id, action="approve_and_send", target_type="publication", target_id=pub.id, details=None)
+    audit.log(
+        admin_id=current.id,
+        action="approve_and_send",
+        target_type="publication",
+        target_id=pub.id,
+        details=None,
+    )
     await session.commit()
     return None

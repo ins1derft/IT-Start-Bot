@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     database_url: str = Field(
-        "postgresql+asyncpg://itstart:itstart@localhost:5432/itstart", validation_alias="POSTGRES_DSN"
+        "postgresql+asyncpg://itstart:itstart@localhost:5432/itstart",
+        validation_alias="POSTGRES_DSN",
     )
     redis_url: str = "redis://localhost:6379/0"
     secret_key: str = "change-me"

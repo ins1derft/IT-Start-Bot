@@ -110,7 +110,9 @@ async def test_block_user_clears_preferences_and_subscriptions():
         await block_user(session, 321)
 
         # verify user inactive and data removed
-        user = (await session.execute(select(models.TgUser).where(models.TgUser.tg_id == 321))).scalar_one()
+        user = (
+            await session.execute(select(models.TgUser).where(models.TgUser.tg_id == 321))
+        ).scalar_one()
         assert user.is_active is False
         prefs = await get_preferences(session, 321)
         assert prefs == {}
