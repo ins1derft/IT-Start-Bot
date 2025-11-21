@@ -16,7 +16,7 @@ from itstart_core_api.repositories import (
     TgUserRepository,
     UserPreferenceRepository,
 )
-from itstart_domain import PublicationType
+from itstart_domain import PublicationType, TagCategory
 
 from .config import get_settings
 
@@ -65,6 +65,8 @@ async def subscribe_tokens(session, tg_id: int, tokens: Iterable[str]):
     tag_repo = TagRepository(session)
     tags = await tag_repo.get_all()
     pub_types, tag_ids, unknown = parse_tokens(tokens, tags)
+    tag_category_by_id = {t.id: t.category for t in tags}
+    found_categories = {tag_category_by_id[tid] for tid in tag_ids if tid in tag_category_by_id}
 
     user = await ensure_user(session, tg_id)
     await session.flush()  # ensure user.id is available
@@ -72,8 +74,21 @@ async def subscribe_tokens(session, tg_id: int, tokens: Iterable[str]):
     sub_repo = SubscriptionRepository(session)
     pref_repo = UserPreferenceRepository(session)
 
-    # If no pub_types specified, default to jobs
-    target_types = pub_types or [PublicationType.job]
+    if not pub_types:
+        raise ValueError("Укажите тип публикаций: jobs, internships или conferences.")
+
+    requires_job_details = any(
+        pt in (PublicationType.job, PublicationType.internship) for pt in pub_types
+    )
+    if requires_job_details:
+        if TagCategory.occupation not in found_categories:
+            raise ValueError("Для вакансий/стажировок укажите сферу деятельности (occupation).")
+        if not ({TagCategory.platform, TagCategory.language} & found_categories):
+            raise ValueError(
+                "Добавьте платформу или язык (platform/language) для вакансий/стажировок."
+            )
+
+    target_types = pub_types
 
     for ptype in target_types:
         sub = await sub_repo.upsert_subscription(user.id, ptype)

@@ -116,6 +116,7 @@ async def update_publication(
         pub.deadline_at = deadline_at
     pub.is_edited = True
     pub.updated_at = datetime.datetime.utcnow()
+    pub.editor_id = current.id
     await session.commit()
     await session.refresh(pub)
     audit.log(

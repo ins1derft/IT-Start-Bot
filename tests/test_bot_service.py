@@ -34,13 +34,15 @@ async def test_parse_tokens_and_subscribe():
         tag_repo = TagRepository(session)
         tag_repo.create("remote", TagCategory.format)
         tag_repo.create("python", TagCategory.language)
+        tag_repo.create("разработчик", TagCategory.occupation)
+        tag_repo.create("ios", TagCategory.platform)
         await session.commit()
 
-        tokens = ["jobs", "remote", "#python", "unknown"]
+        tokens = ["jobs", "remote", "#python", "разработчик", "ios", "unknown"]
         tags = await tag_repo.get_all()
         types, tag_ids, unknown = parse_tokens(tokens, tags)
         assert PublicationType.job in types
-        assert len(tag_ids) == 2
+        assert len(tag_ids) == 4
         assert "unknown" in unknown
 
         result = await subscribe_tokens(session, tg_id=123, tokens=tokens)
@@ -101,10 +103,12 @@ async def test_block_user_clears_preferences_and_subscriptions():
     async with Session() as session:
         tag_repo = TagRepository(session)
         tag_repo.create("remote", TagCategory.format)
+        tag_repo.create("разработчик", TagCategory.occupation)
+        tag_repo.create("python", TagCategory.language)
         await session.commit()
 
         # create subscriptions
-        await subscribe_tokens(session, tg_id=321, tokens=["jobs", "remote"])
+        await subscribe_tokens(session, tg_id=321, tokens=["jobs", "remote", "разработчик", "python"])
         prefs_before = await get_preferences(session, 321)
         assert prefs_before
 
@@ -117,3 +121,23 @@ async def test_block_user_clears_preferences_and_subscriptions():
         assert user.is_active is False
         prefs = await get_preferences(session, 321)
         assert prefs == {}
+
+
+@pytest.mark.asyncio
+async def test_subscribe_requires_type_and_details():
+    engine, Session = make_session()
+    async with engine.begin() as conn:
+        await conn.run_sync(models.Base.metadata.create_all)
+    async with Session() as session:
+        tag_repo = TagRepository(session)
+        tag_repo.create("python", TagCategory.language)
+        tag_repo.create("разработчик", TagCategory.occupation)
+        await session.commit()
+
+        # No publication type
+        with pytest.raises(ValueError):
+            await subscribe_tokens(session, tg_id=999, tokens=["python"])
+
+        # Has type but missing platform/language companion for job? language present but platform/occupation? need both
+        with pytest.raises(ValueError):
+            await subscribe_tokens(session, tg_id=999, tokens=["jobs", "python"])

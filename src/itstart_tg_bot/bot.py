@@ -4,7 +4,7 @@ import asyncio
 import logging
 
 import sentry_sdk
-from aiogram import Bot, Dispatcher, Router, types
+from aiogram import Bot, Dispatcher, F, Router, types
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ChatMemberStatus
 from aiogram.filters import Command, CommandObject
@@ -26,6 +26,34 @@ from .service import (
 
 logger = logging.getLogger(__name__)
 
+MAIN_MENU = types.InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            types.InlineKeyboardButton(text="📝 Подписаться", callback_data="cmd:subscribe"),
+            types.InlineKeyboardButton(text="🚫 Отписаться", callback_data="cmd:unsubscribe"),
+        ],
+        [
+            types.InlineKeyboardButton(text="📋 Предпочтения", callback_data="cmd:preferences"),
+        ],
+        [
+            types.InlineKeyboardButton(text="💼 Вакансии", callback_data="cmd:search:job"),
+            types.InlineKeyboardButton(
+                text="🧑‍🎓 Стажировки", callback_data="cmd:search:internship"
+            ),
+            types.InlineKeyboardButton(
+                text="🎤 Конференции", callback_data="cmd:search:conference"
+            ),
+        ],
+    ]
+)
+
+SUBSCRIBE_TIP = (
+    "Укажите типы: jobs / internships / conferences. Для jobs/internships добавьте:\n"
+    "• сферу (occupation): разработчик, тестировщик, аналитик…\n"
+    "• платформу или язык (platform/language): ios, android, python, csharp…\n"
+    "Дополнительно: формат (remote/office/hybrid), график (part-time/full-time), город."
+)
+
 
 def _build_dispatcher() -> Dispatcher:
     dp = Dispatcher()
@@ -39,7 +67,8 @@ def _build_dispatcher() -> Dispatcher:
         await message.answer(
             "Привет! Я подберу вакансии, стажировки и конференции.\n"
             "Используй /subscribe <теги> или /subscribe без аргументов для пошаговой настройки.\n"
-            "Команды: /subscribe, /unsubscribe, /preferences, /jobs, /internships, /conferences"
+            "Команды: /subscribe, /unsubscribe, /preferences, /jobs, /internships, /conferences",
+            reply_markup=MAIN_MENU,
         )
 
     @router.message(Command("help"))
@@ -48,7 +77,9 @@ def _build_dispatcher() -> Dispatcher:
             "/subscribe [теги] — подписаться\n"
             "/unsubscribe [теги] — отписаться (без аргументов: полная)\n"
             "/preferences — показать текущие теги\n"
-            "/jobs /internships /conferences [теги] — поиск\n"
+            "/jobs /internships /conferences [теги] — поиск\n\n"
+            f"{SUBSCRIBE_TIP}",
+            reply_markup=MAIN_MENU,
         )
 
     @router.message(Command("subscribe"))
@@ -64,13 +95,21 @@ def _build_dispatcher() -> Dispatcher:
         if args.strip():
             tokens = split_tokens(args)
             async with Session() as session:
-                result = await subscribe_tokens(session, message.from_user.id, tokens)
+                try:
+                    result = await subscribe_tokens(session, message.from_user.id, tokens)
+                except ValueError as exc:
+                    await message.answer(f"⚠️ {exc}\n\n{SUBSCRIBE_TIP}", reply_markup=MAIN_MENU)
+                    return
             await message.answer(
-                f"Подписка сохранена. Типы: {result['types']}; теги: {len(result['tags'])}. Неизвестные: {result['unknown']}"
+                f"✅ Подписка сохранена.\nТипы: {', '.join([t.value for t in result['types']])}\n"
+                f"Тегов: {len(result['tags'])}\nНеизвестные: {result['unknown']}",
+                reply_markup=MAIN_MENU,
             )
         else:
             await state.set_state(SubscribeStates.awaiting_tags)
-            await message.answer("Введите теги/типы для подписки (через пробел).")
+            await message.answer(
+                "Введите теги/типы для подписки (через пробел).", reply_markup=MAIN_MENU
+            )
 
     @router.message(SubscribeStates.awaiting_tags)
     async def cmd_subscribe_tags(message: types.Message, state: FSMContext) -> None:
@@ -81,10 +120,16 @@ def _build_dispatcher() -> Dispatcher:
         Session = build_session_maker(engine)
         tokens = split_tokens(message.text or "")
         async with Session() as session:
-            result = await subscribe_tokens(session, message.from_user.id, tokens)
+            try:
+                result = await subscribe_tokens(session, message.from_user.id, tokens)
+            except ValueError as exc:
+                await message.answer(f"⚠️ {exc}\n\n{SUBSCRIBE_TIP}", reply_markup=MAIN_MENU)
+                return
         await state.clear()
         await message.answer(
-            f"Подписка сохранена. Типы: {result['types']}; теги: {len(result['tags'])}. Неизвестные: {result['unknown']}"
+            f"✅ Подписка сохранена.\nТипы: {', '.join([t.value for t in result['types']])}\n"
+            f"Тегов: {len(result['tags'])}\nНеизвестные: {result['unknown']}",
+            reply_markup=MAIN_MENU,
         )
 
     @router.message(Command("unsubscribe"))
@@ -98,7 +143,9 @@ def _build_dispatcher() -> Dispatcher:
         async with Session() as session:
             result = await unsubscribe_tokens(session, message.from_user.id, tokens)
         await message.answer(
-            f"Отписка выполнена. Типы: {result['removed_types']}; теги: {result['removed_tags']}; неизвестные: {result['unknown']}"
+            f"Отписка выполнена.\nТипы: {result['removed_types']}; "
+            f"теги: {result['removed_tags']}; неизвестные: {result['unknown']}",
+            reply_markup=MAIN_MENU,
         )
 
     @router.message(Command("preferences"))
@@ -116,7 +163,7 @@ def _build_dispatcher() -> Dispatcher:
         lines = []
         for cat, names in prefs.items():
             lines.append(f"{cat}: {', '.join(names)}")
-        await message.answer("\n".join(lines))
+        await message.answer("\n".join(lines), reply_markup=MAIN_MENU)
 
     async def handle_search(
         message: types.Message, pub_type: PublicationType, tokens: list[str]
@@ -127,15 +174,25 @@ def _build_dispatcher() -> Dispatcher:
         async with Session() as session:
             pubs = await search_publications(session, pub_type, tokens)
         if not pubs:
-            await message.answer("Ничего не найдено.")
+            await message.answer("Ничего не найдено.", reply_markup=MAIN_MENU)
             return
         resp = []
         for p in pubs:
             if isinstance(p, dict):
-                resp.append(f"{p['title']} — {p['company']} ({p['url']})")
+                resp.append(f"🔗 <b>{p['title']}</b>\n{p['company']}\n{p['url']}")
             else:
-                resp.append(f"{p.title} — {p.company} ({p.url})")
-        await message.answer("\n".join(resp[:10]))
+                icon = {
+                    PublicationType.job: "💼",
+                    PublicationType.internship: "🧑‍🎓",
+                    PublicationType.conference: "🎤",
+                }.get(p.type, "🔗")
+                deadline = (
+                    f"\n🗓 Дедлайн: {p.deadline_at:%d.%m.%Y}"
+                    if getattr(p, "deadline_at", None)
+                    else ""
+                )
+                resp.append(f"{icon} <b>{p.title}</b>\n{p.company}\n{p.url}{deadline}")
+        await message.answer("\n\n".join(resp[:10]), reply_markup=MAIN_MENU)
 
     @router.message(Command("jobs"))
     async def cmd_jobs(message: types.Message, command: CommandObject) -> None:
@@ -148,6 +205,45 @@ def _build_dispatcher() -> Dispatcher:
     @router.message(Command("conferences"))
     async def cmd_conferences(message: types.Message, command: CommandObject) -> None:
         await handle_search(message, PublicationType.conference, split_tokens(command.args or ""))
+
+    @router.callback_query(F.data == "cmd:subscribe")
+    async def cb_subscribe(callback: types.CallbackQuery, state: FSMContext) -> None:
+        await callback.answer()
+        if callback.message:
+            await state.set_state(SubscribeStates.awaiting_tags)
+            await callback.message.answer(
+                "Введите теги/типы для подписки (через пробел).", reply_markup=MAIN_MENU
+            )
+
+    @router.callback_query(F.data == "cmd:unsubscribe")
+    async def cb_unsubscribe(callback: types.CallbackQuery) -> None:
+        await callback.answer()
+        if callback.message:
+            await callback.message.answer(
+                "Отписка: отправьте /unsubscribe <теги> или пусто для полной.",
+                reply_markup=MAIN_MENU,
+            )
+
+    @router.callback_query(F.data == "cmd:preferences")
+    async def cb_preferences(callback: types.CallbackQuery) -> None:
+        await callback.answer()
+        if callback.message:
+            await cmd_preferences(callback.message)
+
+    @router.callback_query(F.data.startswith("cmd:search:"))
+    async def cb_search(callback: types.CallbackQuery) -> None:
+        await callback.answer()
+        if not callback.message or not callback.data:
+            return
+        target = callback.data.split(":", 2)[-1]
+        mapping = {
+            "job": PublicationType.job,
+            "internship": PublicationType.internship,
+            "conference": PublicationType.conference,
+        }
+        pub_type = mapping.get(target)
+        if pub_type and isinstance(callback.message, types.Message):
+            await handle_search(callback.message, pub_type, [])
 
     @router.my_chat_member()
     async def handle_block(update: types.ChatMemberUpdated) -> None:

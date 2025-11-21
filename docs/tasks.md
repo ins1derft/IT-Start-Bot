@@ -24,6 +24,7 @@
 - Парсинг аргументов для /subscribe, /unsubscribe, /jobs|/internships|/conferences (ru/lat, #tag) — ГОТОВО.
 - /preferences: вывод группировкой по категориям — ГОТОВО.
 - Поиск: последние 10 not declined по типу; фильтр по тегам — ГОТОВО.
+- Инлайн‑меню: кнопки для подписки/отписки/поиска, подсказки, обязательные типы публикаций и проверка occupation+platform/language для jobs/internships — ГОТОВО.
 - Уведомления: новые публикации по расписанию; дедлайны (deadline_at) с учётом `deadline_reminder` — ГОТОВО (Celery задачи, schedule таблица).
 - Block handling: `my_chat_member` → refused_at, is_active=false, чистка предпочтений — ГОТОВО.
 - Формат сообщений: единый шаблон + [UPD] при изменении — ГОТОВО.
