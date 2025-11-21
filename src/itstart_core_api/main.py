@@ -14,6 +14,7 @@ from .admin_users import router as admin_users_router
 from .auth import router as auth_router
 from .tags import router as tags_router
 from .publications import router as publications_router
+from .tag_seed import seed_tags, TagRepository
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
 
 app = create_app()
+
+
+@app.on_event("startup")
+async def seed_startup():
+    settings = get_settings()
+    engine = build_engine(settings)
+    Session = build_session_maker(engine)
+    async with Session() as session:
+        repo = TagRepository(session)
+        await seed_tags(repo)
+        await session.commit()
 
 
 def run() -> None:

@@ -67,6 +67,10 @@ class TagRepository(BaseRepository):
         )
         return result.scalar_one_or_none()
 
+    async def get_all(self) -> list[Tag]:
+        res = await self.session.execute(select(Tag))
+        return list(res.scalars())
+
     def create(self, name: str, category: TagCategory) -> Tag:
         tag = Tag(name=name, category=category)
         self.session.add(tag)
