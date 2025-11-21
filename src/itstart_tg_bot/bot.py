@@ -105,7 +105,10 @@ def _build_dispatcher() -> Dispatcher:
             return
         resp = []
         for p in pubs:
-            resp.append(f"{p.title} — {p.company} ({p.url})")
+            if isinstance(p, dict):
+                resp.append(f"{p['title']} — {p['company']} ({p['url']})")
+            else:
+                resp.append(f"{p.title} — {p.company} ({p.url})")
         await message.answer("\n".join(resp[:10]))
 
     @router.message(Command("jobs"))

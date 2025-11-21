@@ -5,7 +5,11 @@ from typing import Iterable, Tuple
 from uuid import UUID
 
 from itstart_domain import PublicationType, TagCategory
+import json
+import asyncio
+import redis.asyncio as redis
 from itstart_core_api import models
+from .config import get_settings
 from itstart_core_api.repositories import (
     TgUserRepository,
     SubscriptionRepository,
@@ -145,13 +149,35 @@ async def search_publications(session, pub_type: PublicationType, tokens: Iterab
     tag_repo = TagRepository(session)
     tags = await tag_repo.get_all()
     _, tag_ids, _ = parse_tokens(tokens, tags)
+
+    cache_key = None
+    cache_client = None
+    try:
+        cache_client = redis.from_url(get_settings().redis_url, decode_responses=True)
+        cache_key = f"search:{pub_type}:{'-'.join(sorted([str(t) for t in tag_ids]))}"
+        if cache_client:
+            cached = await cache_client.get(cache_key)
+            if cached:
+                data = json.loads(cached)
+                # Return lightweight dicts to avoid ORM session issues
+                return data
+    except Exception:
+        cache_client = None
+
     repo = PublicationRepository(session)
     q = repo.base_query().where(repo.model.type == pub_type, repo.model.is_declined == False)  # noqa: E712
     if tag_ids:
         q = q.join(models.PublicationTag, models.PublicationTag.publication_id == repo.model.id).where(models.PublicationTag.tag_id.in_(tag_ids))
     q = q.order_by(repo.model.created_at.desc()).limit(10)
     result = await session.execute(q)
-    return list(result.scalars())
+    pubs = list(result.scalars())
+
+    if cache_client and cache_key:
+        try:
+            await cache_client.set(cache_key, json.dumps([{"title": p.title, "company": p.company, "url": p.url} for p in pubs]), ex=300)
+        except Exception:
+            pass
+    return pubs
 
 
 async def block_user(session, tg_id: int) -> bool:

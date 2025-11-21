@@ -13,7 +13,7 @@
   - source_id (uuid, nullable)
   - created_at, vacancy_created_at
   - updated_at, editor_id (uuid, nullable)
-  - is_edited bool, is_declined bool, status (publication_status), decline_reason text
+  - is_edited bool, is_declined bool, status (publication_status), decline_reason text, deadline_notified bool
   - deadline_at (nullable)
   - contact_info (plain, nullable), contact_info_encrypted bytea (PGP data)
 - `tag`: id (uuid PK), name, category (tag_category), unique (name, category)

@@ -8,9 +8,9 @@
 - [x] Tags: предзаполнить базовые значения по категориям (из ТЗ), добавить e2e с публикациями (сидинг готов).
 - [x] Parsers CRUD/enable/disable + аудит; schedule/beat базовая конфигурация добавлена.
 - [x] Stats endpoints (users/tags/parsers/publications) и экспорт CSV/XLSX.
-- [x] Bot: парсер аргументов, FSM (/subscribe step input), /unsubscribe, /preferences, поисковые команды; модульные тесты на парсинг/логика. Осталось: уведомления, формат [UPD], канал, Redis кеш.
-- [ ] Celery задачи: рассылки, дедлайны, cleanup; тесты на идемпотентность/планирование.
-- [ ] PGP шифрование contact_info_encrypted; юнит-тесты шифр/дешифр.
-- [ ] Метрики Prometheus и Sentry контекст; smoke-тест метрик/healthz.
+- [x] Bot: парсер аргументов, FSM (/subscribe step input), /unsubscribe, /preferences, поисковые команды; модульные тесты на парсинг/логика. Уведомления/канал/[UPD]/Redis кеш реализованы через Celery/tasks.
+- [x] Celery задачи: рассылки, дедлайны, cleanup; базовые тесты.
+- [x] PGP шифрование contact_info_encrypted; юнит-тест шифрования.
+- [x] Метрики Prometheus и Sentry контекст; smoke-тест метрик/healthz.
 - [ ] Покрытие ≥80% доменной логики (pytest+coverage).
 - [ ] CI: сборка Docker образов (core-api, tg-bot), прогон тестов/линтов, публикация артефактов.

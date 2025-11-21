@@ -14,6 +14,7 @@ class Settings(BaseSettings):
         "postgresql+asyncpg://itstart:itstart@localhost:5432/itstart", validation_alias="POSTGRES_DSN"
     )
     sentry_dsn: Optional[str] = None
+    bot_channel_id: Optional[str] = None
 
 
 @lru_cache

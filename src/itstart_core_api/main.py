@@ -19,6 +19,7 @@ from .stats import router as stats_router
 from .tag_seed import seed_tags, TagRepository
 from .export import router as export_router
 from .schedule import router as schedule_router
+from .metrics import router as metrics_router, middleware_factory as metrics_middleware_factory
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(stats_router)
     app.include_router(export_router)
     app.include_router(schedule_router)
+    app.include_router(metrics_router)
+
+    app.middleware("http")(metrics_middleware_factory())
     return app
 
 

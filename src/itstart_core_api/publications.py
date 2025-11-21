@@ -4,12 +4,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from typing import List, Optional
+import datetime
 
 from itstart_domain import PublicationType
 from .auth import get_current_admin
 from .dependencies import get_db_session
 from .repositories import PublicationRepository, TagRepository, AdminAuditRepository
 from .schemas import PublicationRead
+from .config import get_settings
+from .crypto import encrypt_contact_info
 
 router = APIRouter(prefix="/admin/publications", tags=["publications"])
 
@@ -55,6 +58,8 @@ async def update_publication(
     title: str | None = None,
     description: str | None = None,
     status: str | None = None,
+    contact_info: str | None = None,
+    deadline_at: datetime.datetime | None = None,
     session: AsyncSession = Depends(get_db_session),
     current=Depends(get_current_admin),
 ):
@@ -69,7 +74,14 @@ async def update_publication(
         pub.description = description
     if status:
         pub.status = status
+    if contact_info is not None:
+        settings = get_settings()
+        pub.contact_info = contact_info
+        pub.contact_info_encrypted = encrypt_contact_info(contact_info, settings.pgp_public_key)
+    if deadline_at is not None:
+        pub.deadline_at = deadline_at
     pub.is_edited = True
+    pub.updated_at = datetime.datetime.utcnow()
     await session.commit()
     await session.refresh(pub)
     audit.log(admin_id=current.id, action="update_publication", target_type="publication", target_id=pub.id, details=f"status={status}")
