@@ -4,27 +4,122 @@ import asyncio
 import logging
 
 import sentry_sdk
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, Router, types
 from aiogram.client.default import DefaultBotProperties
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandObject
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 
 from .config import Settings, get_settings
 from .db import build_engine, build_session_maker
+from .service import split_tokens, subscribe_tokens, unsubscribe_tokens, get_preferences, search_publications
+from itstart_domain import PublicationType
 
 logger = logging.getLogger(__name__)
 
 
 def _build_dispatcher() -> Dispatcher:
     dp = Dispatcher()
+    router = Router()
 
-    @dp.message(Command("start"))
+    class SubscribeStates(StatesGroup):
+        awaiting_tags = State()
+
+    @router.message(Command("start"))
     async def cmd_start(message: types.Message) -> None:
-        await message.answer("Привет! Бот готовится к работе. Скоро здесь появится функционал.")
+        await message.answer(
+            "Привет! Я подберу вакансии, стажировки и конференции.\n"
+            "Используй /subscribe <теги> или /subscribe без аргументов для пошаговой настройки.\n"
+            "Команды: /subscribe, /unsubscribe, /preferences, /jobs, /internships, /conferences"
+        )
 
-    @dp.message(Command("help"))
+    @router.message(Command("help"))
     async def cmd_help(message: types.Message) -> None:
-        await message.answer("Команды в разработке. Доступны /start и /help.")
+        await message.answer(
+            "/subscribe [теги] — подписаться\n"
+            "/unsubscribe [теги] — отписаться (без аргументов: полная)\n"
+            "/preferences — показать текущие теги\n"
+            "/jobs /internships /conferences [теги] — поиск\n"
+        )
 
+    @router.message(Command("subscribe"))
+    async def cmd_subscribe(message: types.Message, command: CommandObject, state: FSMContext) -> None:
+        settings = get_settings()
+        engine = build_engine(settings)
+        Session = build_session_maker(engine)
+        args = command.args or ""
+        if args.strip():
+            tokens = split_tokens(args)
+            async with Session() as session:
+                result = await subscribe_tokens(session, message.from_user.id, tokens)
+            await message.answer(f"Подписка сохранена. Типы: {result['types']}; теги: {len(result['tags'])}. Неизвестные: {result['unknown']}")
+        else:
+            await state.set_state(SubscribeStates.awaiting_tags)
+            await message.answer("Введите теги/типы для подписки (через пробел).")
+
+    @router.message(SubscribeStates.awaiting_tags)
+    async def cmd_subscribe_tags(message: types.Message, state: FSMContext) -> None:
+        settings = get_settings()
+        engine = build_engine(settings)
+        Session = build_session_maker(engine)
+        tokens = split_tokens(message.text or "")
+        async with Session() as session:
+            result = await subscribe_tokens(session, message.from_user.id, tokens)
+        await state.clear()
+        await message.answer(f"Подписка сохранена. Типы: {result['types']}; теги: {len(result['tags'])}. Неизвестные: {result['unknown']}")
+
+    @router.message(Command("unsubscribe"))
+    async def cmd_unsubscribe(message: types.Message, command: CommandObject) -> None:
+        settings = get_settings()
+        engine = build_engine(settings)
+        Session = build_session_maker(engine)
+        tokens = split_tokens(command.args or "")
+        async with Session() as session:
+            result = await unsubscribe_tokens(session, message.from_user.id, tokens)
+        await message.answer(f"Отписка выполнена. Типы: {result['removed_types']}; теги: {result['removed_tags']}; неизвестные: {result['unknown']}")
+
+    @router.message(Command("preferences"))
+    async def cmd_preferences(message: types.Message) -> None:
+        settings = get_settings()
+        engine = build_engine(settings)
+        Session = build_session_maker(engine)
+        async with Session() as session:
+            prefs = await get_preferences(session, message.from_user.id)
+        if not prefs:
+            await message.answer("Предпочтения не заданы.")
+            return
+        lines = []
+        for cat, names in prefs.items():
+            lines.append(f"{cat}: {', '.join(names)}")
+        await message.answer("\n".join(lines))
+
+    async def handle_search(message: types.Message, pub_type: PublicationType, tokens: list[str]) -> None:
+        settings = get_settings()
+        engine = build_engine(settings)
+        Session = build_session_maker(engine)
+        async with Session() as session:
+            pubs = await search_publications(session, pub_type, tokens)
+        if not pubs:
+            await message.answer("Ничего не найдено.")
+            return
+        resp = []
+        for p in pubs:
+            resp.append(f"{p.title} — {p.company} ({p.url})")
+        await message.answer("\n".join(resp[:10]))
+
+    @router.message(Command("jobs"))
+    async def cmd_jobs(message: types.Message, command: CommandObject) -> None:
+        await handle_search(message, PublicationType.job, split_tokens(command.args or ""))
+
+    @router.message(Command("internships"))
+    async def cmd_internships(message: types.Message, command: CommandObject) -> None:
+        await handle_search(message, PublicationType.internship, split_tokens(command.args or ""))
+
+    @router.message(Command("conferences"))
+    async def cmd_conferences(message: types.Message, command: CommandObject) -> None:
+        await handle_search(message, PublicationType.conference, split_tokens(command.args or ""))
+
+    dp.include_router(router)
     return dp
 
 
