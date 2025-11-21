@@ -1,20 +1,17 @@
 from __future__ import annotations
 
-from datetime import datetime
-
-try:  # Python 3.11+
-    from enum import StrEnum
-except ImportError:  # Python 3.10 fallback
-    from enum import Enum
-
-    class StrEnum(str, Enum):  # type: ignore
-        pass
-
-
 from collections.abc import Sequence
+from datetime import datetime
+from enum import Enum
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+
+
+class StrEnum(str, Enum):
+    """Lightweight replacement for enum.StrEnum for Python 3.10."""
+
+    pass
 
 
 class PublicationType(StrEnum):
@@ -24,7 +21,7 @@ class PublicationType(StrEnum):
 
 
 class TagCategory(StrEnum):
-    format = "format"
+    format = "format"  # type: ignore[assignment]
     occupation = "occupation"
     platform = "platform"
     language = "language"

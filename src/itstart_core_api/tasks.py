@@ -5,7 +5,7 @@ import logging
 from collections.abc import Iterable
 
 import httpx
-from sqlalchemy import select
+from sqlalchemy import and_, delete, select
 
 from .config import get_settings
 from .db import build_engine, build_session_maker
@@ -25,7 +25,8 @@ logger = logging.getLogger(__name__)
 def _format_publication(pub: Publication, tags: list[str], updated: bool = False) -> str:
     prefix = "[UPD] " if updated else ""
     tag_str = " " + " ".join(f"#{t}" for t in tags) if tags else ""
-    deadline = f"\nДедлайн: {pub.deadline_at.date()}" if getattr(pub, "deadline_at", None) else ""
+    deadline_at = getattr(pub, "deadline_at", None)
+    deadline = f"\nДедлайн: {deadline_at.date()}" if deadline_at else ""
     return f"{prefix}{pub.title} — {pub.company}\n{pub.url}{deadline}{tag_str}"
 
 
@@ -60,8 +61,10 @@ async def _eligible_subscriptions(
         select(TgUserSubscription, TgUser)
         .join(TgUser, TgUserSubscription.user_id == TgUser.id)
         .where(
-            TgUserSubscription.publication_type == pub.type,
-            TgUser.is_active == True,  # noqa: E712
+            and_(
+                TgUserSubscription.publication_type == pub.type,
+                TgUser.is_active.is_(True),
+            )
         )
     )
     subs: list[tuple[TgUserSubscription, TgUser]] = []
@@ -89,8 +92,7 @@ async def send_publications() -> None:
         repo = PublicationRepository(session)
         res = await session.execute(
             repo.base_query().where(
-                Publication.status.in_(["new", "ready"]),
-                Publication.is_declined == False,  # noqa: E712
+                and_(Publication.status.in_(["new", "ready"]), Publication.is_declined.is_(False)),
             )
         )
         pubs = list(res.scalars())
@@ -100,13 +102,15 @@ async def send_publications() -> None:
             text = _format_publication(pub, tags, updated=getattr(pub, "is_edited", False))
 
             # send to channel if configured
-            if settings.bot_token and getattr(settings, "bot_channel_id", None):
-                await _send_telegram_message(settings.bot_token, settings.bot_channel_id, text)
+            if settings.bot_token and settings.bot_channel_id:
+                channel_id = settings.bot_channel_id
+                await _send_telegram_message(settings.bot_token, channel_id, text)
 
             # send to subscribers
             subs = await _eligible_subscriptions(session, pub)
-            for _sub, user in subs:
-                await _send_telegram_message(settings.bot_token, user.tg_id, text)
+            if settings.bot_token:
+                for _sub, user in subs:
+                    await _send_telegram_message(settings.bot_token, user.tg_id, text)
 
             pub.status = "sent"
             pub.updated_at = datetime.datetime.utcnow()
@@ -124,11 +128,11 @@ async def send_deadline_reminders() -> None:
     async with Session() as session:
         res = await session.execute(
             select(Publication).where(
-                Publication.deadline_at != None,  # noqa: E711
+                Publication.deadline_at.is_not(None),
                 Publication.deadline_at >= target_from,
                 Publication.deadline_at <= target_to,
-                Publication.is_declined == False,  # noqa: E712
-                Publication.deadline_notified == False,  # noqa: E712
+                Publication.is_declined.is_(False),
+                Publication.deadline_notified.is_(False),
             )
         )
         pubs = list(res.scalars())
@@ -139,9 +143,10 @@ async def send_deadline_reminders() -> None:
                 _format_publication(pub, tags, updated=False)
                 + "\nНапоминание о дедлайне через 3 дня."
             )
-            for sub, user in subs:
-                if getattr(sub, "deadline_reminder", True):
-                    await _send_telegram_message(settings.bot_token, user.tg_id, text)
+            if settings.bot_token:
+                for sub, user in subs:
+                    if getattr(sub, "deadline_reminder", True):
+                        await _send_telegram_message(settings.bot_token, user.tg_id, text)
             pub.deadline_notified = True
         await session.commit()
 
@@ -152,7 +157,5 @@ async def cleanup_old_publications(days: int = 90) -> None:
     Session = build_session_maker(engine)
     threshold = datetime.datetime.utcnow() - datetime.timedelta(days=days)
     async with Session() as session:
-        await session.execute(
-            Publication.__table__.delete().where(Publication.created_at < threshold)
-        )
+        await session.execute(delete(Publication).where(Publication.created_at < threshold))
         await session.commit()

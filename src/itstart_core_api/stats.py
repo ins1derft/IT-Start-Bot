@@ -97,8 +97,8 @@ async def parsers_error_percent(
     q = _date_range_filter(q, ParsingResult.date, date_from, date_to)
     rows = (await session.execute(q)).all()
 
-    totals = defaultdict(int)
-    errors = defaultdict(int)
+    totals: dict[str, int] = defaultdict(int)
+    errors: dict[str, int] = defaultdict(int)
     for parser_id, success in rows:
         totals[parser_id] += 1
         if not success:

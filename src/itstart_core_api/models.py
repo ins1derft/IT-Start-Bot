@@ -1,58 +1,54 @@
 from __future__ import annotations
 
 from datetime import datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    Enum,
-    ForeignKey,
-    Index,
-    Integer,
-    LargeBinary,
-    String,
-    Text,
-    UniqueConstraint,
-)
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy import Enum, ForeignKey, Index, LargeBinary, Text, UniqueConstraint
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from itstart_domain import AdminRole, ParserType, PublicationType, TagCategory
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    pass
+
+
+def uuid_pk() -> Mapped[UUID]:
+    return mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
 
 
 class Publication(Base):
     __tablename__ = "publication"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    title = Column(String(255), nullable=False)
-    description = Column(Text, nullable=False)
-    type = Column(Enum(PublicationType, name="publication_type"), nullable=False)
-    company = Column(String(255), nullable=False)
-    url = Column(Text, unique=True, nullable=False)
-    source_id = Column(UUID(as_uuid=True))
-    created_at = Column(DateTime, nullable=False)
-    vacancy_created_at = Column(DateTime, nullable=False)
-    updated_at = Column(DateTime)
-    editor_id = Column(UUID(as_uuid=True))
-    is_edited = Column(Boolean, nullable=False, default=False)
-    is_declined = Column(Boolean, nullable=False, default=False)
-    deadline_at = Column(DateTime)
-    contact_info = Column(Text)
-    contact_info_encrypted = Column(LargeBinary)
-    deadline_notified = Column(Boolean, nullable=False, default=False)
-    status = Column(
+    id: Mapped[UUID] = uuid_pk()
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    type: Mapped[PublicationType] = mapped_column(
+        Enum(PublicationType, name="publication_type"), nullable=False
+    )
+    company: Mapped[str] = mapped_column(Text, nullable=False)
+    url: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
+    source_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True))
+    created_at: Mapped[datetime] = mapped_column(nullable=False)
+    vacancy_created_at: Mapped[datetime] = mapped_column(nullable=False)
+    updated_at: Mapped[datetime | None]
+    editor_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True))
+    is_edited: Mapped[bool] = mapped_column(default=False, nullable=False)
+    is_declined: Mapped[bool] = mapped_column(default=False, nullable=False)
+    deadline_at: Mapped[datetime | None]
+    contact_info: Mapped[str | None]
+    contact_info_encrypted: Mapped[bytes | None] = mapped_column(LargeBinary)
+    deadline_notified: Mapped[bool] = mapped_column(default=False, nullable=False)
+    status: Mapped[str] = mapped_column(
         Enum("new", "declined", "ready", "sent", name="publication_status"),
         nullable=False,
         default="new",
     )
-    decline_reason = Column(Text)
+    decline_reason: Mapped[str | None]
 
-    tags = relationship(
-        "PublicationTag", cascade="all, delete-orphan", back_populates="publication"
+    tags: Mapped[list[PublicationTag]] = relationship(
+        cascade="all, delete-orphan", back_populates="publication"
     )
 
 
@@ -60,42 +56,44 @@ class Tag(Base):
     __tablename__ = "tag"
     __table_args__ = (UniqueConstraint("name", "category", name="uq_tag_name_category"),)
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    name = Column(String(255), nullable=False)
-    category = Column(Enum(TagCategory, name="tag_category"), nullable=False)
+    id: Mapped[UUID] = uuid_pk()
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    category: Mapped[TagCategory] = mapped_column(Enum(TagCategory, name="tag_category"))
 
-    publications = relationship(
-        "PublicationTag", cascade="all, delete-orphan", back_populates="tag"
+    publications: Mapped[list[PublicationTag]] = relationship(
+        cascade="all, delete-orphan", back_populates="tag"
     )
 
 
 class PublicationTag(Base):
     __tablename__ = "publication_tags"
 
-    publication_id = Column(
-        UUID(as_uuid=True), ForeignKey("publication.id", ondelete="CASCADE"), primary_key=True
+    publication_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("publication.id", ondelete="CASCADE"), primary_key=True
     )
-    tag_id = Column(UUID(as_uuid=True), ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True)
+    tag_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
+    )
 
-    publication = relationship("Publication", back_populates="tags")
-    tag = relationship("Tag", back_populates="publications")
+    publication: Mapped[Publication] = relationship(back_populates="tags")
+    tag: Mapped[Tag] = relationship(back_populates="publications")
 
 
 class TgUser(Base):
     __tablename__ = "tg_user"
     __table_args__ = (UniqueConstraint("tg_id", name="uq_tg_user_tg_id"),)
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    tg_id = Column(Integer, nullable=False)
-    register_at = Column(DateTime, nullable=False)
-    refused_at = Column(DateTime)
-    is_active = Column(Boolean, nullable=False, default=True)
+    id: Mapped[UUID] = uuid_pk()
+    tg_id: Mapped[int] = mapped_column(nullable=False)
+    register_at: Mapped[datetime] = mapped_column(nullable=False)
+    refused_at: Mapped[datetime | None]
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
-    subscriptions = relationship(
-        "TgUserSubscription", cascade="all, delete-orphan", back_populates="user"
+    subscriptions: Mapped[list[TgUserSubscription]] = relationship(
+        cascade="all, delete-orphan", back_populates="user"
     )
-    preferences = relationship(
-        "UserPreference", cascade="all, delete-orphan", back_populates="user"
+    preferences: Mapped[list[UserPreference]] = relationship(
+        cascade="all, delete-orphan", back_populates="user"
     )
 
 
@@ -103,112 +101,123 @@ class TgUserSubscription(Base):
     __tablename__ = "tg_user_subscriptions"
     __table_args__ = (UniqueConstraint("user_id", "publication_type", name="uq_sub_user_type"),)
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id = Column(
-        UUID(as_uuid=True), ForeignKey("tg_user.id", ondelete="CASCADE"), nullable=False
+    id: Mapped[UUID] = uuid_pk()
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("tg_user.id", ondelete="CASCADE"), nullable=False
     )
-    publication_type = Column(Enum(PublicationType, name="publication_type"), nullable=False)
-    deadline_reminder = Column(Boolean, nullable=False, default=True)
+    publication_type: Mapped[PublicationType] = mapped_column(
+        Enum(PublicationType, name="publication_type"), nullable=False
+    )
+    deadline_reminder: Mapped[bool] = mapped_column(default=True, nullable=False)
 
-    user = relationship("TgUser", back_populates="subscriptions")
-    tags = relationship(
-        "TgUserSubscriptionTag", cascade="all, delete-orphan", back_populates="subscription"
+    user: Mapped[TgUser] = relationship(back_populates="subscriptions")
+    tags: Mapped[list[TgUserSubscriptionTag]] = relationship(
+        cascade="all, delete-orphan", back_populates="subscription"
     )
 
 
 class TgUserSubscriptionTag(Base):
     __tablename__ = "tg_user_subscription_tags"
 
-    subscription_id = Column(
-        UUID(as_uuid=True),
+    subscription_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
         ForeignKey("tg_user_subscriptions.id", ondelete="CASCADE"),
         primary_key=True,
     )
-    tag_id = Column(UUID(as_uuid=True), ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True)
+    tag_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
+    )
 
-    subscription = relationship("TgUserSubscription", back_populates="tags")
-    tag = relationship("Tag")
+    subscription: Mapped[TgUserSubscription] = relationship(back_populates="tags")
+    tag: Mapped[Tag] = relationship()
 
 
 class UserPreference(Base):
     __tablename__ = "user_preferences"
 
-    user_id = Column(
-        UUID(as_uuid=True), ForeignKey("tg_user.id", ondelete="CASCADE"), primary_key=True
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("tg_user.id", ondelete="CASCADE"), primary_key=True
     )
-    tag_id = Column(UUID(as_uuid=True), ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True)
+    tag_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True
+    )
 
-    user = relationship("TgUser", back_populates="preferences")
-    tag = relationship("Tag")
+    user: Mapped[TgUser] = relationship(back_populates="preferences")
+    tag: Mapped[Tag] = relationship()
 
 
 class PublicationSchedule(Base):
     __tablename__ = "publication_schedule"
     __table_args__ = (UniqueConstraint("publication_type", name="uq_publication_schedule_type"),)
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    publication_type = Column(Enum(PublicationType, name="publication_type"), nullable=False)
-    interval_minutes = Column(Integer, nullable=False)
-    start_time = Column(DateTime, nullable=True)
-    is_active = Column(Boolean, nullable=False, default=True)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id: Mapped[UUID] = uuid_pk()
+    publication_type: Mapped[PublicationType] = mapped_column(
+        Enum(PublicationType, name="publication_type"), nullable=False
+    )
+    interval_minutes: Mapped[int] = mapped_column(nullable=False)
+    start_time: Mapped[datetime | None]
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
 
 class Parser(Base):
     __tablename__ = "parser"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    source_name = Column(String(255), nullable=False)
-    executable_file_path = Column(Text, nullable=False)
-    type = Column(Enum(ParserType, name="parser_type"), nullable=False)
-    parsing_interval = Column(Integer, nullable=False)
-    parsing_start_time = Column(DateTime, nullable=False)
-    last_parsed_at = Column(DateTime)
-    is_active = Column(Boolean, nullable=False, default=True)
+    id: Mapped[UUID] = uuid_pk()
+    source_name: Mapped[str] = mapped_column(Text, nullable=False)
+    executable_file_path: Mapped[str] = mapped_column(Text, nullable=False)
+    type: Mapped[ParserType] = mapped_column(Enum(ParserType, name="parser_type"), nullable=False)
+    parsing_interval: Mapped[int] = mapped_column(nullable=False)
+    parsing_start_time: Mapped[datetime] = mapped_column(nullable=False)
+    last_parsed_at: Mapped[datetime | None]
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
-    results = relationship("ParsingResult", cascade="all, delete-orphan", back_populates="parser")
+    results: Mapped[list[ParsingResult]] = relationship(
+        cascade="all, delete-orphan", back_populates="parser"
+    )
 
 
 class ParsingResult(Base):
     __tablename__ = "parsing_result"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    date = Column(DateTime, nullable=False)
-    parser_id = Column(
-        UUID(as_uuid=True), ForeignKey("parser.id", ondelete="CASCADE"), nullable=False
+    id: Mapped[UUID] = uuid_pk()
+    date: Mapped[datetime] = mapped_column(nullable=False)
+    parser_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("parser.id", ondelete="CASCADE"), nullable=False
     )
-    success = Column(Boolean, nullable=False)
-    received_amount = Column(Integer, nullable=False)
+    success: Mapped[bool] = mapped_column(nullable=False)
+    received_amount: Mapped[int] = mapped_column(nullable=False)
 
-    parser = relationship("Parser", back_populates="results")
+    parser: Mapped[Parser] = relationship(back_populates="results")
 
 
 class AdminUser(Base):
     __tablename__ = "admin_user"
     __table_args__ = (UniqueConstraint("username", name="uq_admin_username"),)
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    username = Column(String(255), nullable=False)
-    password_hash = Column(Text, nullable=False)
-    role = Column(Enum(AdminRole, name="admin_role"), nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True)
-    otp_secret = Column(Text)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    id: Mapped[UUID] = uuid_pk()
+    username: Mapped[str] = mapped_column(Text, nullable=False)
+    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    role: Mapped[AdminRole] = mapped_column(Enum(AdminRole, name="admin_role"), nullable=False)
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    otp_secret: Mapped[str | None]
+    created_at: Mapped[datetime] = mapped_column(nullable=False, default=datetime.utcnow)
 
 
 class AdminAuditLog(Base):
     __tablename__ = "admin_audit_log"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    admin_id = Column(UUID(as_uuid=True), nullable=False)
-    action = Column(String(255), nullable=False)
-    target_type = Column(String(255), nullable=False)
-    target_id = Column(UUID(as_uuid=True))
-    details = Column(Text)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    id: Mapped[UUID] = uuid_pk()
+    admin_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+    action: Mapped[str] = mapped_column(Text, nullable=False)
+    target_type: Mapped[str] = mapped_column(Text, nullable=False)
+    target_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True))
+    details: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(nullable=False, default=datetime.utcnow)
 
 
-# Indices mirroring schema
 Index("idx_publication_type_created_at", Publication.type, Publication.created_at.desc())
 Index("idx_publication_tags_tag", PublicationTag.tag_id)
 Index("idx_parsing_result_parser_date", ParsingResult.parser_id, ParsingResult.date)

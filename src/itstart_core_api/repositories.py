@@ -4,7 +4,7 @@ import datetime
 from collections.abc import Iterable
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from itstart_domain import AdminRole, ParserType, PublicationType, TagCategory
@@ -36,10 +36,10 @@ class PublicationRepository(BaseRepository):
         result = await self.session.execute(select(Publication).where(Publication.id == pub_id))
         return result.scalar_one_or_none()
 
-    async def list_recent(self, pub_type: str, limit: int = 10) -> list[Publication]:
+    async def list_recent(self, pub_type: PublicationType, limit: int = 10) -> list[Publication]:
         result = await self.session.execute(
             select(Publication)
-            .where(Publication.type == pub_type, Publication.is_declined == False)  # noqa: E712
+            .where(and_(Publication.type == pub_type, Publication.is_declined.is_(False)))
             .order_by(Publication.created_at.desc())
             .limit(limit)
         )
@@ -65,7 +65,7 @@ class TagRepository(BaseRepository):
 
     async def get_by_name_category(self, name: str, category: TagCategory) -> Tag | None:
         result = await self.session.execute(
-            select(Tag).where(Tag.name == name, Tag.category == category)
+            select(Tag).where(and_(Tag.name == name, Tag.category == category))
         )
         return result.scalar_one_or_none()
 
@@ -73,7 +73,7 @@ class TagRepository(BaseRepository):
         res = await self.session.execute(select(Tag))
         return list(res.scalars())
 
-    def create(self, name: str, category: TagCategory) -> Tag:
+    def create(self, name: str, category: TagCategory | str) -> Tag:
         tag = Tag(name=name, category=category)
         self.session.add(tag)
         return tag
@@ -100,12 +100,14 @@ class SubscriptionRepository(BaseRepository):
     model = TgUserSubscription
 
     async def upsert_subscription(
-        self, user_id: UUID, pub_type: str, deadline_reminder: bool = True
+        self, user_id: UUID, pub_type: PublicationType, deadline_reminder: bool = True
     ) -> TgUserSubscription:
         result = await self.session.execute(
             select(TgUserSubscription).where(
-                TgUserSubscription.user_id == user_id,
-                TgUserSubscription.publication_type == pub_type,
+                and_(
+                    TgUserSubscription.user_id == user_id,
+                    TgUserSubscription.publication_type == pub_type,
+                )
             )
         )
         sub = result.scalar_one_or_none()
@@ -268,7 +270,9 @@ class PublicationScheduleRepository(BaseRepository):
     def base_query(self):
         return select(PublicationSchedule)
 
-    async def get_by_type(self, publication_type: PublicationType) -> PublicationSchedule | None:
+    async def get_by_type(
+        self, publication_type: PublicationType | str
+    ) -> PublicationSchedule | None:
         result = await self.session.execute(
             select(PublicationSchedule).where(
                 PublicationSchedule.publication_type == publication_type
@@ -278,7 +282,7 @@ class PublicationScheduleRepository(BaseRepository):
 
     async def upsert(
         self,
-        publication_type: PublicationType,
+        publication_type: PublicationType | str,
         interval_minutes: int,
         start_time: datetime.datetime | None = None,
         is_active: bool = True,

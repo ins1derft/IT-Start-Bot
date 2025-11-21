@@ -55,6 +55,8 @@ def _build_dispatcher() -> Dispatcher:
     async def cmd_subscribe(
         message: types.Message, command: CommandObject, state: FSMContext
     ) -> None:
+        if message.from_user is None:
+            return
         settings = get_settings()
         engine = build_engine(settings)
         Session = build_session_maker(engine)
@@ -72,6 +74,8 @@ def _build_dispatcher() -> Dispatcher:
 
     @router.message(SubscribeStates.awaiting_tags)
     async def cmd_subscribe_tags(message: types.Message, state: FSMContext) -> None:
+        if message.from_user is None:
+            return
         settings = get_settings()
         engine = build_engine(settings)
         Session = build_session_maker(engine)
@@ -85,6 +89,8 @@ def _build_dispatcher() -> Dispatcher:
 
     @router.message(Command("unsubscribe"))
     async def cmd_unsubscribe(message: types.Message, command: CommandObject) -> None:
+        if message.from_user is None:
+            return
         settings = get_settings()
         engine = build_engine(settings)
         Session = build_session_maker(engine)
@@ -97,6 +103,8 @@ def _build_dispatcher() -> Dispatcher:
 
     @router.message(Command("preferences"))
     async def cmd_preferences(message: types.Message) -> None:
+        if message.from_user is None:
+            return
         settings = get_settings()
         engine = build_engine(settings)
         Session = build_session_maker(engine)
@@ -147,7 +155,6 @@ def _build_dispatcher() -> Dispatcher:
         if update.new_chat_member.status not in {
             ChatMemberStatus.KICKED,
             ChatMemberStatus.LEFT,
-            ChatMemberStatus.BANNED,
         }:
             return
         settings = get_settings()

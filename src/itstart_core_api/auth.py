@@ -90,8 +90,8 @@ async def login(
     login_limiter.check(payload.username)
 
     if settings.allowed_login_ips:
-        client_ip = request.client.host
-        if client_ip not in settings.allowed_login_ips:
+        client_ip = request.client.host if request.client else None
+        if client_ip is None or client_ip not in settings.allowed_login_ips:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="IP not allowed")
 
     repo = AdminUserRepository(session)

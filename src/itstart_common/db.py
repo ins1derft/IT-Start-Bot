@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Callable
-from contextlib import asynccontextmanager
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -21,7 +21,7 @@ def create_session_maker(engine: AsyncEngine) -> async_sessionmaker[AsyncSession
 
 def session_dependency(
     session_factory: async_sessionmaker[AsyncSession],
-) -> Callable[[], AsyncIterator[AsyncSession]]:
+) -> Callable[[], AbstractAsyncContextManager[AsyncSession]]:
     @asynccontextmanager
     async def _get_session() -> AsyncIterator[AsyncSession]:
         async with session_factory() as session:

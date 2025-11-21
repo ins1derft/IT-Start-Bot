@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from uuid import UUID
 
 import redis.asyncio as redis
+from sqlalchemy import delete
 
 from itstart_core_api import models
 from itstart_core_api.repositories import (
@@ -27,9 +28,9 @@ def split_tokens(text: str) -> list[str]:
 def parse_tokens(
     tokens: Iterable[str], tags: list
 ) -> tuple[list[PublicationType], list[UUID], list[str]]:
-    pub_types = []
-    tag_ids = []
-    unknown = []
+    pub_types: list[PublicationType] = []
+    tag_ids: list[UUID] = []
+    unknown: list[str] = []
     tag_lookup = {t.name.lower(): t.id for t in tags}
     for token in tokens:
         if token in ("jobs", "job"):
@@ -108,9 +109,7 @@ async def unsubscribe_tokens(session, tg_id: int, tokens: Iterable[str]):
 
     if pub_types:
         await session.execute(
-            SubscriptionRepository(session)
-            .model.__table__.delete()
-            .where(
+            delete(SubscriptionRepository(session).model).where(
                 SubscriptionRepository(session).model.user_id == user.id,
                 SubscriptionRepository(session).model.publication_type.in_(pub_types),
             )
@@ -120,9 +119,7 @@ async def unsubscribe_tokens(session, tg_id: int, tokens: Iterable[str]):
     if tag_ids:
         # delete from user_preferences
         await session.execute(
-            UserPreferenceRepository(session)
-            .model.__table__.delete()
-            .where(
+            delete(UserPreferenceRepository(session).model).where(
                 UserPreferenceRepository(session).model.user_id == user.id,
                 UserPreferenceRepository(session).model.tag_id.in_(tag_ids),
             )
@@ -148,7 +145,7 @@ async def get_preferences(session, tg_id: int):
         .where(UserPreferenceRepository(session).model.user_id == user.id)
     )
     rows = (await session.execute(q)).scalars().all()
-    grouped = {}
+    grouped: dict[models.TagCategory, list[str]] = {}
     for t in rows:
         grouped.setdefault(t.category, []).append(t.name)
     return grouped
@@ -206,14 +203,14 @@ async def block_user(session, tg_id: int) -> bool:
     user.refused_at = datetime.datetime.utcnow()
 
     await session.execute(
-        UserPreferenceRepository(session)
-        .model.__table__.delete()
-        .where(UserPreferenceRepository(session).model.user_id == user.id)
+        delete(UserPreferenceRepository(session).model).where(
+            UserPreferenceRepository(session).model.user_id == user.id
+        )
     )
     await session.execute(
-        SubscriptionRepository(session)
-        .model.__table__.delete()
-        .where(SubscriptionRepository(session).model.user_id == user.id)
+        delete(SubscriptionRepository(session).model).where(
+            SubscriptionRepository(session).model.user_id == user.id
+        )
     )
     await session.commit()
     return True
