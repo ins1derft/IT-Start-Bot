@@ -6,20 +6,20 @@ import sentry_sdk
 import uvicorn
 from fastapi import FastAPI
 
+from .admin_users import router as admin_users_router
 from .api import router
+from .auth import router as auth_router
 from .config import Settings, get_settings
 from .db import build_engine, build_session_maker
-from .dependencies import get_db_session
-from .admin_users import router as admin_users_router
-from .auth import router as auth_router
-from .tags import router as tags_router
-from .publications import router as publications_router
-from .parsers import router as parsers_router
-from .stats import router as stats_router
-from .tag_seed import seed_tags, TagRepository
 from .export import router as export_router
+from .metrics import middleware_factory as metrics_middleware_factory
+from .metrics import router as metrics_router
+from .parsers import router as parsers_router
+from .publications import router as publications_router
 from .schedule import router as schedule_router
-from .metrics import router as metrics_router, middleware_factory as metrics_middleware_factory
+from .stats import router as stats_router
+from .tag_seed import TagRepository, seed_tags
+from .tags import router as tags_router
 
 logger = logging.getLogger(__name__)
 

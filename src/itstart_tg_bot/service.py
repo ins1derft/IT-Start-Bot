@@ -1,22 +1,23 @@
 from __future__ import annotations
 
 import datetime
-from typing import Iterable, Tuple
+import json
+from collections.abc import Iterable
 from uuid import UUID
 
-from itstart_domain import PublicationType, TagCategory
-import json
-import asyncio
 import redis.asyncio as redis
+
 from itstart_core_api import models
-from .config import get_settings
 from itstart_core_api.repositories import (
-    TgUserRepository,
-    SubscriptionRepository,
-    UserPreferenceRepository,
-    TagRepository,
     PublicationRepository,
+    SubscriptionRepository,
+    TagRepository,
+    TgUserRepository,
+    UserPreferenceRepository,
 )
+from itstart_domain import PublicationType
+
+from .config import get_settings
 
 
 def split_tokens(text: str) -> list[str]:
@@ -104,13 +105,11 @@ async def unsubscribe_tokens(session, tg_id: int, tokens: Iterable[str]):
     removed_tags = []
 
     if pub_types:
-        # simplistic: deactivate matching subscriptions
-        for ptype in pub_types:
-            result = await session.execute(
-                SubscriptionRepository(session)
-                .base_query()
-                .where(SubscriptionRepository(session).model.user_id == user.id)
-            )
+        await session.execute(
+            SubscriptionRepository(session)
+            .model.__table__.delete()
+            .where(SubscriptionRepository(session).model.user_id == user.id, SubscriptionRepository(session).model.publication_type.in_(pub_types))
+        )
         removed_types = pub_types
 
     if tag_ids:

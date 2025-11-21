@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from itstart_domain import TagCategory
+
 from .repositories import TagRepository
 
 SEED_TAGS = {

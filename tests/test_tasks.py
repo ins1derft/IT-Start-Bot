@@ -1,14 +1,17 @@
 import datetime
-import pytest
 from uuid import uuid4
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+import pytest
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from itstart_core_api import models
-from itstart_core_api.tasks import send_publications, send_deadline_reminders, cleanup_old_publications
-from itstart_core_api.config import Settings, get_settings
-from itstart_core_api.dependencies import get_db_session
-from itstart_core_api.main import create_app
+from itstart_core_api.config import Settings
+from itstart_core_api.tasks import (
+    cleanup_old_publications,
+    send_deadline_reminders,
+    send_publications,
+)
 
 
 @pytest.mark.asyncio

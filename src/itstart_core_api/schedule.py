@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import datetime
-from typing import Optional
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from itstart_domain import PublicationType, AdminRole
+from itstart_domain import AdminRole, PublicationType
+
 from .auth import get_current_admin
 from .dependencies import get_db_session
 from .repositories import PublicationScheduleRepository

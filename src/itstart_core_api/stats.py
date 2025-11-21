@@ -2,29 +2,27 @@ from __future__ import annotations
 
 import datetime
 from collections import defaultdict
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from itstart_domain import AdminRole
+
 from .auth import get_current_admin
 from .dependencies import get_db_session
 from .models import (
+    ParsingResult,
     Publication,
     PublicationTag,
     Tag,
     TgUser,
-    TgUserSubscription,
-    ParsingResult,
 )
-
 
 router = APIRouter(prefix="/admin/stats", tags=["stats"])
 
 
-def _date_range_filter(query, column, date_from: Optional[datetime.date], date_to: Optional[datetime.date]):
+def _date_range_filter(query, column, date_from: datetime.date | None, date_to: datetime.date | None):
     if date_from:
         query = query.where(column >= datetime.datetime.combine(date_from, datetime.time.min))
     if date_to:
@@ -34,8 +32,8 @@ def _date_range_filter(query, column, date_from: Optional[datetime.date], date_t
 
 @router.get("/users")
 async def users_stats(
-    date_from: Optional[datetime.date] = None,
-    date_to: Optional[datetime.date] = None,
+    date_from: datetime.date | None = None,
+    date_to: datetime.date | None = None,
     session: AsyncSession = Depends(get_db_session),
     current=Depends(get_current_admin),
 ):
@@ -43,10 +41,10 @@ async def users_stats(
         raise HTTPException(status_code=403, detail="Forbidden")
 
     q_sub = select(func.count()).select_from(TgUser)
-    q_sub = _date_range_filter(q_sub.where(TgUser.register_at != None), TgUser.register_at, date_from, date_to)  # noqa: E712
+    q_sub = _date_range_filter(q_sub.where(TgUser.register_at.is_not(None)), TgUser.register_at, date_from, date_to)
 
     q_unsub = select(func.count()).select_from(TgUser)
-    q_unsub = _date_range_filter(q_unsub.where(TgUser.refused_at != None), TgUser.refused_at, date_from, date_to)  # noqa: E712
+    q_unsub = _date_range_filter(q_unsub.where(TgUser.refused_at.is_not(None)), TgUser.refused_at, date_from, date_to)
 
     subs = (await session.execute(q_sub)).scalar_one()
     unsubs = (await session.execute(q_unsub)).scalar_one()
@@ -83,8 +81,8 @@ async def tags_top(
 
 @router.get("/parsers")
 async def parsers_error_percent(
-    date_from: Optional[datetime.date] = None,
-    date_to: Optional[datetime.date] = None,
+    date_from: datetime.date | None = None,
+    date_to: datetime.date | None = None,
     session: AsyncSession = Depends(get_db_session),
     current=Depends(get_current_admin),
 ):
@@ -111,8 +109,8 @@ async def parsers_error_percent(
 
 @router.get("/publications")
 async def publications_per_day(
-    date_from: Optional[datetime.date] = None,
-    date_to: Optional[datetime.date] = None,
+    date_from: datetime.date | None = None,
+    date_to: datetime.date | None = None,
     session: AsyncSession = Depends(get_db_session),
     current=Depends(get_current_admin),
 ):

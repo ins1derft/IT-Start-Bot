@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import time
-from typing import Dict, Tuple
 
 from fastapi import HTTPException, status
 
@@ -12,7 +11,7 @@ class InMemoryRateLimiter:
     def __init__(self, window_seconds: int, max_hits: int):
         self.window = window_seconds
         self.max_hits = max_hits
-        self.storage: Dict[str, list[float]] = {}
+        self.storage: dict[str, list[float]] = {}
 
     def check(self, key: str) -> None:
         now = time.time()

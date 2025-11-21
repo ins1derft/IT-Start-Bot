@@ -1,5 +1,4 @@
 from functools import lru_cache
-from typing import Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -13,8 +12,8 @@ class Settings(BaseSettings):
     database_url: str = Field(
         "postgresql+asyncpg://itstart:itstart@localhost:5432/itstart", validation_alias="POSTGRES_DSN"
     )
-    sentry_dsn: Optional[str] = None
-    bot_channel_id: Optional[str] = None
+    sentry_dsn: str | None = None
+    bot_channel_id: str | None = None
 
 
 @lru_cache

@@ -1,18 +1,22 @@
 from __future__ import annotations
 
-import asyncio
 import datetime
 import logging
-import json
-from typing import Iterable
+from collections.abc import Iterable
 
 import httpx
 from sqlalchemy import select
 
-from itstart_domain import PublicationType
 from .config import get_settings
 from .db import build_engine, build_session_maker
-from .models import Publication, PublicationTag, Tag, TgUser, TgUserSubscription, TgUserSubscriptionTag
+from .models import (
+    Publication,
+    PublicationTag,
+    Tag,
+    TgUser,
+    TgUserSubscription,
+    TgUserSubscriptionTag,
+)
 from .repositories import PublicationRepository
 
 logger = logging.getLogger(__name__)
@@ -97,7 +101,7 @@ async def send_publications() -> None:
 
             # send to subscribers
             subs = await _eligible_subscriptions(session, pub)
-            for sub, user in subs:
+            for _sub, user in subs:
                 await _send_telegram_message(settings.bot_token, user.tg_id, text)
 
             pub.status = "sent"

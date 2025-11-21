@@ -1,15 +1,7 @@
-import datetime
-import pytest
-from uuid import uuid4
-
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from sqlalchemy import select
 import pgpy
+import pytest
 
-from itstart_core_api import models
-from itstart_core_api.publications import update_publication
 from itstart_core_api.crypto import encrypt_contact_info
-from itstart_core_api.config import Settings
 
 
 def make_key():

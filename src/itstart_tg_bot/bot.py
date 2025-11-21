@@ -5,16 +5,24 @@ import logging
 
 import sentry_sdk
 from aiogram import Bot, Dispatcher, Router, types
-from aiogram.enums import ChatMemberStatus
 from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ChatMemberStatus
 from aiogram.filters import Command, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
+from itstart_domain import PublicationType
+
 from .config import Settings, get_settings
 from .db import build_engine, build_session_maker
-from .service import split_tokens, subscribe_tokens, unsubscribe_tokens, get_preferences, search_publications, block_user
-from itstart_domain import PublicationType
+from .service import (
+    block_user,
+    get_preferences,
+    search_publications,
+    split_tokens,
+    subscribe_tokens,
+    unsubscribe_tokens,
+)
 
 logger = logging.getLogger(__name__)
 

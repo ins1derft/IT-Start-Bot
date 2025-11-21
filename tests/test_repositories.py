@@ -1,14 +1,14 @@
 import datetime
+
 import pytest
 
+from itstart_core_api import models
 from itstart_core_api.repositories import (
     PublicationRepository,
-    TagRepository,
-    TgUserRepository,
     SubscriptionRepository,
+    TgUserRepository,
     UserPreferenceRepository,
 )
-from itstart_core_api import models
 from itstart_domain import PublicationType, TagCategory
 
 
@@ -16,7 +16,7 @@ from itstart_domain import PublicationType, TagCategory
 async def test_user_create_or_activate(session):
     repo = TgUserRepository(session)
     now = datetime.datetime.utcnow()
-    user = await repo.create_or_activate(123, now)
+    await repo.create_or_activate(123, now)
     await session.commit()
 
     fetched = await repo.get_by_tg_id(123)
@@ -29,8 +29,6 @@ async def test_user_create_or_activate(session):
 async def test_subscription_upsert_and_tags(session):
     user_repo = TgUserRepository(session)
     sub_repo = SubscriptionRepository(session)
-    tag_repo = TagRepository(session)
-
     now = datetime.datetime.utcnow()
     user = await user_repo.create_or_activate(1, now)
     await session.commit()

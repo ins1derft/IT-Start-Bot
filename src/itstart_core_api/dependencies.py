@@ -1,10 +1,11 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .db import build_engine, build_session_maker
 from .config import get_settings
+from .db import build_engine, build_session_maker
 
 
 def get_session_maker():

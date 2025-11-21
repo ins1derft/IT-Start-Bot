@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+
 try:  # Python 3.11+
     from enum import StrEnum
 except ImportError:  # Python 3.10 fallback
@@ -8,7 +9,7 @@ except ImportError:  # Python 3.10 fallback
 
     class StrEnum(str, Enum):  # type: ignore
         pass
-from typing import Optional, Sequence
+from collections.abc import Sequence
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -45,26 +46,26 @@ class Publication(BaseModel):
     type: PublicationType
     company: str
     url: str
-    source_id: Optional[UUID] = None
+    source_id: UUID | None = None
     created_at: datetime
     vacancy_created_at: datetime
-    updated_at: Optional[datetime] = None
-    editor_id: Optional[UUID] = None
+    updated_at: datetime | None = None
+    editor_id: UUID | None = None
     is_edited: bool = False
     is_declined: bool = False
-    deadline_at: Optional[datetime] = None
-    contact_info: Optional[str] = None
-    contact_info_encrypted: Optional[bytes] = None
+    deadline_at: datetime | None = None
+    contact_info: str | None = None
+    contact_info_encrypted: bytes | None = None
     tags: Sequence[Tag] = Field(default_factory=tuple)
     status: str = "new"
-    decline_reason: Optional[str] = None
+    decline_reason: str | None = None
 
 
 class TgUser(BaseModel):
     id: UUID
     tg_id: int
     register_at: datetime
-    refused_at: Optional[datetime] = None
+    refused_at: datetime | None = None
     is_active: bool = True
 
 
@@ -84,10 +85,10 @@ class Parser(BaseModel):
     id: UUID
     source_name: str
     executable_file_path: str
-    type: "ParserType"
+    type: ParserType
     parsing_interval: int
     parsing_start_time: datetime
-    last_parsed_at: Optional[datetime] = None
+    last_parsed_at: datetime | None = None
     is_active: bool = True
 
 
@@ -110,8 +111,8 @@ class AdminUser(BaseModel):
     password_hash: str
     role: AdminRole
     is_active: bool = True
-    otp_secret: Optional[str] = None
-    created_at: Optional[datetime] = None
+    otp_secret: str | None = None
+    created_at: datetime | None = None
 
 
 class UserPreference(BaseModel):

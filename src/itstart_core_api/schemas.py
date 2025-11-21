@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -28,22 +27,22 @@ class PublicationRead(Model):
     url: str
     created_at: datetime
     vacancy_created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
     is_edited: bool
     is_declined: bool
-    deadline_at: Optional[datetime] = None
-    contact_info: Optional[str] = None
-    tags: List[TagRead] = Field(default_factory=list)
+    deadline_at: datetime | None = None
+    contact_info: str | None = None
+    tags: list[TagRead] = Field(default_factory=list)
     status: str
-    decline_reason: Optional[str] = None
-    editor_id: Optional[UUID] = None
+    decline_reason: str | None = None
+    editor_id: UUID | None = None
 
 
 class TgUserRead(Model):
     id: UUID
     tg_id: int
     register_at: datetime
-    refused_at: Optional[datetime] = None
+    refused_at: datetime | None = None
     is_active: bool
 
 
@@ -56,7 +55,7 @@ class SubscriptionRead(Model):
     user_id: UUID
     publication_type: PublicationType
     deadline_reminder: bool
-    tags: List[SubscriptionTagRead] = Field(default_factory=list)
+    tags: list[SubscriptionTagRead] = Field(default_factory=list)
 
 
 class UserPreferenceRead(Model):
@@ -71,7 +70,7 @@ class ParserRead(Model):
     type: ParserType
     parsing_interval: int
     parsing_start_time: datetime
-    last_parsed_at: Optional[datetime] = None
+    last_parsed_at: datetime | None = None
     is_active: bool
 
 
@@ -87,15 +86,15 @@ class PublicationScheduleRead(Model):
     id: UUID
     publication_type: PublicationType
     interval_minutes: int
-    start_time: Optional[datetime]
+    start_time: datetime | None
     is_active: bool
     updated_at: datetime
 
 
 class PublicationScheduleUpdate(BaseModel):
-    job_interval_minutes: Optional[int] = None
-    internship_interval_minutes: Optional[int] = None
-    conference_interval_minutes: Optional[int] = None
+    job_interval_minutes: int | None = None
+    internship_interval_minutes: int | None = None
+    conference_interval_minutes: int | None = None
 
 
 class AdminUserRead(Model):

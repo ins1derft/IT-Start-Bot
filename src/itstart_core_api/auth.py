@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Optional
 from uuid import UUID
 
 import pyotp
@@ -11,10 +10,11 @@ from jose import JWTError, jwt
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from itstart_domain import AdminRole
+
 from .config import Settings, get_settings
 from .dependencies import get_db_session
 from .rate_limiter import InMemoryRateLimiter
-from itstart_domain import AdminRole
 from .repositories import AdminUserRepository
 from .security import hash_password, verify_password
 
@@ -25,7 +25,7 @@ login_limiter = InMemoryRateLimiter(window_seconds=60, max_hits=5)
 class LoginRequest(BaseModel):
     username: str
     password: str
-    otp_code: Optional[str] = None
+    otp_code: str | None = None
 
 
 class TokenResponse(BaseModel):
@@ -38,14 +38,14 @@ class TokenResponse(BaseModel):
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-def _create_access_token(settings: Settings, subject: str, expires_delta: Optional[timedelta] = None) -> str:
+def _create_access_token(settings: Settings, subject: str, expires_delta: timedelta | None = None) -> str:
     to_encode = {"sub": subject, "iat": datetime.utcnow(), "typ": "access"}
     expire = datetime.utcnow() + (expires_delta or timedelta(seconds=settings.access_token_ttl_sec))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.secret_key, algorithm="HS256")
 
 
-def _create_refresh_token(settings: Settings, subject: str, expires_delta: Optional[timedelta] = None) -> str:
+def _create_refresh_token(settings: Settings, subject: str, expires_delta: timedelta | None = None) -> str:
     to_encode = {"sub": subject, "iat": datetime.utcnow(), "typ": "refresh"}
     expire = datetime.utcnow() + (expires_delta or timedelta(seconds=settings.refresh_token_ttl_sec))
     to_encode.update({"exp": expire})

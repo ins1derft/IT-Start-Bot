@@ -1,26 +1,26 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-from typing import Optional
 import datetime
+from collections.abc import Iterable
 from uuid import UUID
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from itstart_domain import AdminRole, ParserType, PublicationType, TagCategory
+
 from .models import (
-    AdminUser,
     AdminAuditLog,
+    AdminUser,
     Parser,
-    ParsingResult,
     Publication,
+    PublicationSchedule,
     PublicationTag,
     Tag,
     TgUser,
     TgUserSubscription,
     TgUserSubscriptionTag,
     UserPreference,
-    PublicationSchedule,
 )
 
 
@@ -32,7 +32,7 @@ class BaseRepository:
 class PublicationRepository(BaseRepository):
     model = Publication
 
-    async def get(self, pub_id: UUID) -> Optional[Publication]:
+    async def get(self, pub_id: UUID) -> Publication | None:
         result = await self.session.execute(select(Publication).where(Publication.id == pub_id))
         return result.scalar_one_or_none()
 
@@ -62,7 +62,7 @@ class TagRepository(BaseRepository):
         result = await self.session.execute(select(Tag).where(Tag.name.in_(list(names))))
         return list(result.scalars())
 
-    async def get_by_name_category(self, name: str, category: TagCategory) -> Optional[Tag]:
+    async def get_by_name_category(self, name: str, category: TagCategory) -> Tag | None:
         result = await self.session.execute(
             select(Tag).where(Tag.name == name, Tag.category == category)
         )
@@ -79,7 +79,7 @@ class TagRepository(BaseRepository):
 
 
 class TgUserRepository(BaseRepository):
-    async def get_by_tg_id(self, tg_id: int) -> Optional[TgUser]:
+    async def get_by_tg_id(self, tg_id: int) -> TgUser | None:
         result = await self.session.execute(select(TgUser).where(TgUser.tg_id == tg_id))
         return result.scalar_one_or_none()
 
@@ -128,11 +128,11 @@ class AdminUserRepository(BaseRepository):
     def base_query(self):
         return select(AdminUser)
 
-    async def get_by_username(self, username: str) -> Optional[AdminUser]:
+    async def get_by_username(self, username: str) -> AdminUser | None:
         result = await self.session.execute(select(AdminUser).where(AdminUser.username == username))
         return result.scalar_one_or_none()
 
-    async def get(self, user_id: UUID) -> Optional[AdminUser]:
+    async def get(self, user_id: UUID) -> AdminUser | None:
         return await self.session.get(AdminUser, user_id)
 
     def create(self, username: str, password_hash: str, role: AdminRole, is_active: bool = True) -> AdminUser:
@@ -150,9 +150,9 @@ class AdminUserRepository(BaseRepository):
         self,
         user: AdminUser,
         *,
-        role: Optional[AdminRole] = None,
-        is_active: Optional[bool] = None,
-        password_hash: Optional[str] = None,
+        role: AdminRole | None = None,
+        is_active: bool | None = None,
+        password_hash: str | None = None,
     ) -> AdminUser:
         if role is not None:
             user.role = role
@@ -164,7 +164,7 @@ class AdminUserRepository(BaseRepository):
 
 
 class AdminAuditRepository(BaseRepository):
-    def log(self, admin_id: UUID, action: str, target_type: str, target_id: Optional[UUID], details: Optional[str] = None) -> AdminAuditLog:
+    def log(self, admin_id: UUID, action: str, target_type: str, target_id: UUID | None, details: str | None = None) -> AdminAuditLog:
         entry = AdminAuditLog(
             admin_id=admin_id,
             action=action,
@@ -189,7 +189,7 @@ class ParserRepository(BaseRepository):
     def base_query(self):
         return select(Parser)
 
-    async def get(self, parser_id: UUID) -> Optional[Parser]:
+    async def get(self, parser_id: UUID) -> Parser | None:
         return await self.session.get(Parser, parser_id)
 
     def create(
@@ -216,12 +216,12 @@ class ParserRepository(BaseRepository):
         self,
         parser: Parser,
         *,
-        source_name: Optional[str] = None,
-        executable_file_path: Optional[str] = None,
-        type: Optional[ParserType] = None,
-        parsing_interval: Optional[int] = None,
-        parsing_start_time: Optional[datetime.datetime] = None,
-        is_active: Optional[bool] = None,
+        source_name: str | None = None,
+        executable_file_path: str | None = None,
+        type: ParserType | None = None,
+        parsing_interval: int | None = None,
+        parsing_start_time: datetime.datetime | None = None,
+        is_active: bool | None = None,
     ) -> Parser:
         if source_name is not None:
             parser.source_name = source_name
@@ -244,7 +244,7 @@ class PublicationScheduleRepository(BaseRepository):
     def base_query(self):
         return select(PublicationSchedule)
 
-    async def get_by_type(self, publication_type: PublicationType) -> Optional[PublicationSchedule]:
+    async def get_by_type(self, publication_type: PublicationType) -> PublicationSchedule | None:
         result = await self.session.execute(select(PublicationSchedule).where(PublicationSchedule.publication_type == publication_type))
         return result.scalar_one_or_none()
 
@@ -252,7 +252,7 @@ class PublicationScheduleRepository(BaseRepository):
         self,
         publication_type: PublicationType,
         interval_minutes: int,
-        start_time: Optional[datetime.datetime] = None,
+        start_time: datetime.datetime | None = None,
         is_active: bool = True,
     ) -> PublicationSchedule:
         existing = await self.get_by_type(publication_type)

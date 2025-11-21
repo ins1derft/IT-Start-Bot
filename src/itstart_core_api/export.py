@@ -1,17 +1,16 @@
 from __future__ import annotations
 
 import csv
-import io
 import datetime
-from typing import Optional
-
-from openpyxl import Workbook
+import io
 
 from fastapi import APIRouter, Depends, HTTPException, Response
+from openpyxl import Workbook
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from itstart_domain import AdminRole
+
 from .auth import get_current_admin
 from .dependencies import get_db_session
 from .models import Publication, PublicationTag, Tag
@@ -21,8 +20,8 @@ router = APIRouter(prefix="/admin/export", tags=["export"])
 
 @router.get("/publications")
 async def export_publications(
-    date_from: Optional[datetime.date] = None,
-    date_to: Optional[datetime.date] = None,
+    date_from: datetime.date | None = None,
+    date_to: datetime.date | None = None,
     fmt: str = "csv",
     session: AsyncSession = Depends(get_db_session),
     current=Depends(get_current_admin),

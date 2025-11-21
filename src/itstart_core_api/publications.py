@@ -1,20 +1,21 @@
 from __future__ import annotations
 
+import datetime
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
-from typing import List, Optional
-import datetime
+from sqlalchemy.orm import selectinload
 
 from itstart_domain import PublicationType
+
 from .auth import get_current_admin
-from .dependencies import get_db_session
-from .repositories import PublicationRepository, TagRepository, AdminAuditRepository
-from .models import PublicationTag
-from .schemas import PublicationRead
 from .config import get_settings
 from .crypto import encrypt_contact_info
-from sqlalchemy.orm import selectinload
+from .dependencies import get_db_session
+from .models import PublicationTag
+from .repositories import AdminAuditRepository, PublicationRepository
+from .schemas import PublicationRead
 
 router = APIRouter(prefix="/admin/publications", tags=["publications"])
 
@@ -50,9 +51,9 @@ def _to_pub_read(pub) -> PublicationRead:
 async def list_publications(
     pub_type: PublicationType | None = None,
     status: str | None = None,
-    date_from: Optional[str] = None,
-    date_to: Optional[str] = None,
-    tag_ids: Optional[List[UUID]] = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    tag_ids: list[UUID] | None = None,
     session: AsyncSession = Depends(get_db_session),
     current=Depends(get_current_admin),
 ):

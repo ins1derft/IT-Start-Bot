@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from itstart_domain import AdminRole
+
 from .auth import get_current_admin
-from .config import Settings, get_settings
 from .dependencies import get_db_session
-from .repositories import AdminUserRepository, AdminAuditRepository
+from .repositories import AdminAuditRepository, AdminUserRepository
 from .schemas import AdminUserRead
 from .security import hash_password
-
 
 router = APIRouter(prefix="/admin/users", tags=["admin-users"])
 

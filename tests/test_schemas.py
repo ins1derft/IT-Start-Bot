@@ -2,7 +2,7 @@ import datetime
 from uuid import uuid4
 
 from itstart_core_api import schemas
-from itstart_domain import PublicationType, TagCategory, ParserType, AdminRole
+from itstart_domain import AdminRole, ParserType, PublicationType
 
 
 def test_publication_read_from_kwargs():

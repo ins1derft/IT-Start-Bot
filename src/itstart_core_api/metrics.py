@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 
 from fastapi import APIRouter, Response
-from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
 REQUEST_COUNT = Counter("http_requests_total", "Total HTTP requests", ["path", "method", "status"])
 REQUEST_LATENCY = Histogram(
