@@ -47,3 +47,42 @@ async def create_user(
     await session.commit()
     await session.refresh(user)
     return user
+
+
+@router.patch("/{user_id}", response_model=AdminUserRead)
+async def update_user(
+    user_id: UUID,
+    role: AdminRole | None = None,
+    is_active: bool | None = None,
+    password: str | None = None,
+    session: AsyncSession = Depends(get_db_session),
+    current=Depends(get_current_admin),
+):
+    if current.role != AdminRole.admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    repo = AdminUserRepository(session)
+    user = await repo.get(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Not found")
+    pwd_hash = hash_password(password) if password else None
+    await repo.patch(user, role=role, is_active=is_active, password_hash=pwd_hash)
+    await session.commit()
+    await session.refresh(user)
+    return user
+
+
+@router.delete("/{user_id}", status_code=204)
+async def disable_user(
+    user_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+    current=Depends(get_current_admin),
+):
+    if current.role != AdminRole.admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    repo = AdminUserRepository(session)
+    user = await repo.get(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Not found")
+    user.is_active = False
+    await session.commit()
+    return None

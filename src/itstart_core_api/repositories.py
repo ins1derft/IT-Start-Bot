@@ -124,6 +124,22 @@ class AdminUserRepository(BaseRepository):
     async def get(self, user_id: UUID) -> Optional[AdminUser]:
         return await self.session.get(AdminUser, user_id)
 
+    async def patch(
+        self,
+        user: AdminUser,
+        *,
+        role: Optional[AdminRole] = None,
+        is_active: Optional[bool] = None,
+        password_hash: Optional[str] = None,
+    ) -> AdminUser:
+        if role is not None:
+            user.role = role
+        if is_active is not None:
+            user.is_active = is_active
+        if password_hash is not None:
+            user.password_hash = password_hash
+        return user
+
     def create(self, username: str, password_hash: str, role: AdminRole, is_active: bool = True) -> AdminUser:
         user = AdminUser(username=username, password_hash=password_hash, role=role, is_active=is_active, created_at=datetime.datetime.utcnow())
         self.session.add(user)
