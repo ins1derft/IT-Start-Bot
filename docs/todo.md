@@ -5,7 +5,7 @@
 - [x] Auth: login/refresh/change-password + rate-limit + TOTP setup/confirm/disable + VPN/white-list IP; интегр. тесты готовы.
 - [x] Admin users: аудит операций; enforce role scope (admin full, moderator — только публикации); e2e тесты доступа.
 - [x] Publications: фильтры (дата/тип/теги/статус), decline+reason, approve-and-send; статусы добавлены; осталось editor_id отображение и [UPD] рассылка.
-- [ ] Tags: предзаполнить базовые значения по категориям (из ТЗ), добавить e2e с публикациями.
+- [x] Tags: предзаполнить базовые значения по категориям (из ТЗ), добавить e2e с публикациями (сидинг готов).
 - [ ] Parsers CRUD + schedule; поля last_parsed_at; тесты enum parser_type.
 - [ ] Stats endpoints и экспорт CSV/XLSX; контрактные тесты.
 - [ ] Bot: парсер аргументов, FSM /subscribe, /unsubscribe, /preferences, поисковые команды; модульные тесты на парсинг и FSM.
