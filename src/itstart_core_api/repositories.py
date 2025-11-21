@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from typing import Optional
+import datetime
 from uuid import UUID
 
 from sqlalchemy import select, update, delete
@@ -95,13 +96,23 @@ class UserPreferenceRepository(BaseRepository):
 
 
 class AdminUserRepository(BaseRepository):
+    def base_query(self):
+        return select(AdminUser)
+
     async def get_by_username(self, username: str) -> Optional[AdminUser]:
         result = await self.session.execute(select(AdminUser).where(AdminUser.username == username))
         return result.scalar_one_or_none()
+
+    async def get(self, user_id: UUID) -> Optional[AdminUser]:
+        return await self.session.get(AdminUser, user_id)
+
+    def create(self, username: str, password_hash: str, role: AdminRole, is_active: bool = True) -> AdminUser:
+        user = AdminUser(username=username, password_hash=password_hash, role=role, is_active=is_active, created_at=datetime.datetime.utcnow())
+        self.session.add(user)
+        return user
 
 
 class ParserRepository(BaseRepository):
     async def list_active(self) -> list[Parser]:
         result = await self.session.execute(select(Parser).where(Parser.is_active == True))  # noqa: E712
         return list(result.scalars())
-
