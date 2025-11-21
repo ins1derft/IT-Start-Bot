@@ -10,6 +10,8 @@ from .api import router
 from .config import Settings, get_settings
 from .db import build_engine, build_session_maker
 from .dependencies import get_db_session
+from .admin_users import router as admin_users_router
+from .auth import router as auth_router
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +38,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.dependency_overrides = {}
     app.include_router(router, dependencies=[])
+    app.include_router(auth_router)
+    app.include_router(admin_users_router)
     return app
 
 
