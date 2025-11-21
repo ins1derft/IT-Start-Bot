@@ -8,7 +8,7 @@ from itstart_domain import AdminRole
 from .auth import get_current_admin
 from .config import Settings, get_settings
 from .dependencies import get_db_session
-from .repositories import AdminUserRepository
+from .repositories import AdminUserRepository, AdminAuditRepository
 from .schemas import AdminUserRead
 from .security import hash_password
 
@@ -40,12 +40,15 @@ async def create_user(
     if current.role != AdminRole.admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     repo = AdminUserRepository(session)
+    audit = AdminAuditRepository(session)
     exists = await repo.get_by_username(username)
     if exists:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username exists")
     user = repo.create(username=username, password_hash=hash_password(password), role=role)
     await session.commit()
     await session.refresh(user)
+    audit.log(admin_id=current.id, action="create_admin_user", target_type="admin_user", target_id=user.id, details=f"role={role}")
+    await session.commit()
     return user
 
 
@@ -61,6 +64,7 @@ async def update_user(
     if current.role != AdminRole.admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     repo = AdminUserRepository(session)
+    audit = AdminAuditRepository(session)
     user = await repo.get(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="Not found")
@@ -68,6 +72,8 @@ async def update_user(
     await repo.patch(user, role=role, is_active=is_active, password_hash=pwd_hash)
     await session.commit()
     await session.refresh(user)
+    audit.log(admin_id=current.id, action="update_admin_user", target_type="admin_user", target_id=user.id, details=f"role={role},is_active={is_active},pwd_changed={bool(password)}")
+    await session.commit()
     return user
 
 
@@ -80,9 +86,12 @@ async def disable_user(
     if current.role != AdminRole.admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     repo = AdminUserRepository(session)
+    audit = AdminAuditRepository(session)
     user = await repo.get(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="Not found")
     user.is_active = False
+    await session.commit()
+    audit.log(admin_id=current.id, action="disable_admin_user", target_type="admin_user", target_id=user.id, details=None)
     await session.commit()
     return None

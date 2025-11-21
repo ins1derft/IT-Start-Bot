@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import (
     AdminUser,
+    AdminAuditLog,
     Parser,
     ParsingResult,
     Publication,
@@ -124,6 +125,17 @@ class AdminUserRepository(BaseRepository):
     async def get(self, user_id: UUID) -> Optional[AdminUser]:
         return await self.session.get(AdminUser, user_id)
 
+    def create(self, username: str, password_hash: str, role: AdminRole, is_active: bool = True) -> AdminUser:
+        user = AdminUser(
+            username=username,
+            password_hash=password_hash,
+            role=role,
+            is_active=is_active,
+            created_at=datetime.datetime.utcnow(),
+        )
+        self.session.add(user)
+        return user
+
     async def patch(
         self,
         user: AdminUser,
@@ -139,6 +151,19 @@ class AdminUserRepository(BaseRepository):
         if password_hash is not None:
             user.password_hash = password_hash
         return user
+
+
+class AdminAuditRepository(BaseRepository):
+    def log(self, admin_id: UUID, action: str, target_type: str, target_id: Optional[UUID], details: Optional[str] = None) -> AdminAuditLog:
+        entry = AdminAuditLog(
+            admin_id=admin_id,
+            action=action,
+            target_type=target_type,
+            target_id=target_id,
+            details=details,
+        )
+        self.session.add(entry)
+        return entry
 
     def create(self, username: str, password_hash: str, role: AdminRole, is_active: bool = True) -> AdminUser:
         user = AdminUser(username=username, password_hash=password_hash, role=role, is_active=is_active, created_at=datetime.datetime.utcnow())

@@ -167,6 +167,18 @@ class AdminUser(Base):
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
 
+class AdminAuditLog(Base):
+    __tablename__ = "admin_audit_log"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    admin_id = Column(UUID(as_uuid=True), nullable=False)
+    action = Column(String(255), nullable=False)
+    target_type = Column(String(255), nullable=False)
+    target_id = Column(UUID(as_uuid=True))
+    details = Column(Text)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+
 # Indices mirroring schema
 Index("idx_publication_type_created_at", Publication.type, Publication.created_at.desc())
 Index("idx_publication_tags_tag", PublicationTag.tag_id)
