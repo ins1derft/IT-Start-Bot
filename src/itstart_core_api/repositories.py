@@ -95,6 +95,7 @@ class TgUserRepository(BaseRepository):
 
 
 class SubscriptionRepository(BaseRepository):
+    model = TgUserSubscription
     async def upsert_subscription(self, user_id: UUID, pub_type: str, deadline_reminder: bool = True) -> TgUserSubscription:
         result = await self.session.execute(
             select(TgUserSubscription).where(
@@ -116,6 +117,7 @@ class SubscriptionRepository(BaseRepository):
 
 
 class UserPreferenceRepository(BaseRepository):
+    model = UserPreference
     async def add(self, user_id: UUID, tag_ids: Iterable[UUID]) -> None:
         for tag_id in tag_ids:
             self.session.add(UserPreference(user_id=user_id, tag_id=tag_id))

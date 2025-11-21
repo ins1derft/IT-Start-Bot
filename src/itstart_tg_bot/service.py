@@ -152,3 +152,19 @@ async def search_publications(session, pub_type: PublicationType, tokens: Iterab
     q = q.order_by(repo.model.created_at.desc()).limit(10)
     result = await session.execute(q)
     return list(result.scalars())
+
+
+async def block_user(session, tg_id: int) -> bool:
+    """Mark user as refused and clear preferences/subscriptions"""
+    user_repo = TgUserRepository(session)
+    user = await user_repo.get_by_tg_id(tg_id)
+    if not user:
+        return False
+
+    user.is_active = False
+    user.refused_at = datetime.datetime.utcnow()
+
+    await session.execute(UserPreferenceRepository(session).model.__table__.delete().where(UserPreferenceRepository(session).model.user_id == user.id))
+    await session.execute(SubscriptionRepository(session).model.__table__.delete().where(SubscriptionRepository(session).model.user_id == user.id))
+    await session.commit()
+    return True

@@ -4,7 +4,8 @@ import csv
 import io
 import datetime
 from typing import Optional
-from uuid import UUID
+
+from openpyxl import Workbook
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import select
@@ -66,6 +67,23 @@ async def export_publications(
             content=buf.getvalue(),
             media_type="text/csv",
             headers={"Content-Disposition": "attachment; filename=publications.csv"},
+        )
+    if fmt == "xlsx":
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "publications"
+        ws.append(["id", "title", "type", "company", "url", "created_at", "status", "tags"])
+        for row in rows:
+            ws.append(row)
+
+        stream = io.BytesIO()
+        wb.save(stream)
+        stream.seek(0)
+
+        return Response(
+            content=stream.getvalue(),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": "attachment; filename=publications.xlsx"},
         )
     else:
         raise HTTPException(status_code=400, detail="Unsupported format")

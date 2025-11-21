@@ -5,6 +5,7 @@ import logging
 
 import sentry_sdk
 from aiogram import Bot, Dispatcher, Router, types
+from aiogram.enums import ChatMemberStatus
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command, CommandObject
 from aiogram.fsm.context import FSMContext
@@ -12,7 +13,7 @@ from aiogram.fsm.state import State, StatesGroup
 
 from .config import Settings, get_settings
 from .db import build_engine, build_session_maker
-from .service import split_tokens, subscribe_tokens, unsubscribe_tokens, get_preferences, search_publications
+from .service import split_tokens, subscribe_tokens, unsubscribe_tokens, get_preferences, search_publications, block_user
 from itstart_domain import PublicationType
 
 logger = logging.getLogger(__name__)
@@ -118,6 +119,17 @@ def _build_dispatcher() -> Dispatcher:
     @router.message(Command("conferences"))
     async def cmd_conferences(message: types.Message, command: CommandObject) -> None:
         await handle_search(message, PublicationType.conference, split_tokens(command.args or ""))
+
+    @router.my_chat_member()
+    async def handle_block(update: types.ChatMemberUpdated) -> None:
+        # React to user blocking the bot or leaving
+        if update.new_chat_member.status not in {ChatMemberStatus.KICKED, ChatMemberStatus.LEFT, ChatMemberStatus.BANNED}:
+            return
+        settings = get_settings()
+        engine = build_engine(settings)
+        Session = build_session_maker(engine)
+        async with Session() as session:
+            await block_user(session, update.from_user.id)
 
     dp.include_router(router)
     return dp

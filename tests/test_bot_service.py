@@ -2,9 +2,18 @@ import datetime
 import pytest
 from uuid import uuid4
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
-from itstart_tg_bot.service import parse_tokens, subscribe_tokens, unsubscribe_tokens, get_preferences, search_publications, split_tokens
+from itstart_tg_bot.service import (
+    parse_tokens,
+    subscribe_tokens,
+    unsubscribe_tokens,
+    get_preferences,
+    search_publications,
+    split_tokens,
+    block_user,
+)
 from itstart_core_api import models
 from itstart_core_api.repositories import TagRepository
 from itstart_domain import TagCategory, PublicationType
@@ -81,3 +90,28 @@ async def test_search_publications():
 def test_split_tokens():
     txt = "jobs  remote, #python"
     assert split_tokens(txt) == ["jobs", "remote", "#python"]
+
+
+@pytest.mark.asyncio
+async def test_block_user_clears_preferences_and_subscriptions():
+    engine, Session = make_session()
+    async with engine.begin() as conn:
+        await conn.run_sync(models.Base.metadata.create_all)
+
+    async with Session() as session:
+        tag_repo = TagRepository(session)
+        tag_repo.create("remote", TagCategory.format)
+        await session.commit()
+
+        # create subscriptions
+        await subscribe_tokens(session, tg_id=321, tokens=["jobs", "remote"])
+        prefs_before = await get_preferences(session, 321)
+        assert prefs_before
+
+        await block_user(session, 321)
+
+        # verify user inactive and data removed
+        user = (await session.execute(select(models.TgUser).where(models.TgUser.tg_id == 321))).scalar_one()
+        assert user.is_active is False
+        prefs = await get_preferences(session, 321)
+        assert prefs == {}
