@@ -2,6 +2,9 @@ import datetime
 from uuid import uuid4
 
 import pytest
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
 from itstart_core_api import models
 from itstart_core_api.repositories import TagRepository
 from itstart_domain import PublicationType, TagCategory
@@ -14,8 +17,6 @@ from itstart_tg_bot.service import (
     subscribe_tokens,
     unsubscribe_tokens,
 )
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 
 def make_session():

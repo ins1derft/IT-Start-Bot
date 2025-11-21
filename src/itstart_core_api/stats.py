@@ -4,19 +4,14 @@ import datetime
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException
-from itstart_domain import AdminRole
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from itstart_domain import AdminRole
+
 from .auth import get_current_admin
 from .dependencies import get_db_session
-from .models import (
-    ParsingResult,
-    Publication,
-    PublicationTag,
-    Tag,
-    TgUser,
-)
+from .models import ParsingResult, Publication, PublicationTag, Tag, TgUser
 
 router = APIRouter(prefix="/admin/stats", tags=["stats"])
 

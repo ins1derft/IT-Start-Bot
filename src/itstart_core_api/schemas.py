@@ -3,8 +3,9 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from itstart_domain import AdminRole, ParserType, PublicationType, TagCategory
 from pydantic import BaseModel, Field
+
+from itstart_domain import AdminRole, ParserType, PublicationType, TagCategory
 
 
 class Model(BaseModel):

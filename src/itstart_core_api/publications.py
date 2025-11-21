@@ -4,9 +4,10 @@ import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from itstart_domain import PublicationType
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+
+from itstart_domain import PublicationType
 
 from .auth import get_current_admin
 from .config import get_settings

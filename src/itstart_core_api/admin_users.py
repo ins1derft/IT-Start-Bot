@@ -3,8 +3,9 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from itstart_domain import AdminRole
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from itstart_domain import AdminRole
 
 from .auth import get_current_admin
 from .dependencies import get_db_session

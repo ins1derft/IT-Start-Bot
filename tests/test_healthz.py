@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+
 from itstart_core_api.config import Settings
 from itstart_core_api.main import create_app
 

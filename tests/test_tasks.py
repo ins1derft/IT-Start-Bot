@@ -2,6 +2,9 @@ import datetime
 from uuid import uuid4
 
 import pytest
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
 from itstart_core_api import models
 from itstart_core_api.config import Settings
 from itstart_core_api.tasks import (
@@ -9,8 +12,6 @@ from itstart_core_api.tasks import (
     send_deadline_reminders,
     send_publications,
 )
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 
 @pytest.mark.asyncio

@@ -1,5 +1,6 @@
 import pytest
 from fastapi import HTTPException
+
 from itstart_core_api.rate_limiter import InMemoryRateLimiter
 
 

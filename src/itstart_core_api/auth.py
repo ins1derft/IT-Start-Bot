@@ -6,10 +6,11 @@ from uuid import UUID
 import pyotp
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from itstart_domain import AdminRole
 from jose import JWTError, jwt
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from itstart_domain import AdminRole
 
 from .config import Settings, get_settings
 from .dependencies import get_db_session

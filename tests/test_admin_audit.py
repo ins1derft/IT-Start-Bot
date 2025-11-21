@@ -1,9 +1,10 @@
 from uuid import uuid4
 
 import pytest
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
 from itstart_core_api import models
 from itstart_core_api.repositories import AdminAuditRepository
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 
 @pytest.mark.asyncio

@@ -4,9 +4,10 @@ import datetime
 from collections.abc import Iterable
 from uuid import UUID
 
-from itstart_domain import AdminRole, ParserType, PublicationType, TagCategory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from itstart_domain import AdminRole, ParserType, PublicationType, TagCategory
 
 from .models import (
     AdminAuditLog,
