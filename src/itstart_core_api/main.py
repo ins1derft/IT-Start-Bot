@@ -15,7 +15,9 @@ from .auth import router as auth_router
 from .tags import router as tags_router
 from .publications import router as publications_router
 from .parsers import router as parsers_router
+from .stats import router as stats_router
 from .tag_seed import seed_tags, TagRepository
+from .export import router as export_router
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +45,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(tags_router)
     app.include_router(publications_router)
     app.include_router(parsers_router)
+    app.include_router(stats_router)
+    app.include_router(export_router)
     return app
 
 
