@@ -10,14 +10,14 @@
 - [x] Pydantic схемы (read) и тесты на них.
 
 ## Core API (admin panel)
-- Auth/2FA: login + refresh + change password + rate limit готовы; осталось setup/confirm/disable TOTP.
-- Admin users: list/create + patch (role/is_active/password) + disable готовы; осталось аудит (admin/moderator).
-- Publications CRUD: list/get/patch (title/description, is_edited) готово; осталось фильтры по тегам/статусам, decline+reason, approve-and-send, editor_id.
-- Tags CRUD (enum category, unique (name, category)) — базовый list/create/update/delete готов.
-- Parsers & schedule: list/add/update/enable/disable; schedule endpoints для рассылок.
-- Stats: users (sub/unsub delta), active users, top-5 tags, parser error %, publications per day.
-- Export: publications+tags CSV/XLSX by date range.
-- Metrics/health: `/healthz` (готово), Prometheus metrics, Sentry контекст.
+- Auth/2FA: login + refresh + change password + rate limit ГОТОВО; осталось setup/confirm/disable TOTP, поддержка VPN/White list IP (требование ТЗ).
+- Admin users: list/create/patch(role,is_active,password)/disable ГОТОВО; осталось аудит действий и строгие права (admin — всё, moderator — только публикации).
+- Publications: list/get/patch(title/description,is_edited) ГОТОВО; осталось фильтры по дате/типу/тегам, статусы модерации (новая/отклонена/готова/отправлена), decline с reason, approve-and-send, editor_id, [UPD]-рассылка при изменениях.
+- Tags: CRUD ГОТОВО; требуется предзаполнение базовых значений по категориям из ТЗ.
+- Parsers & schedule: list/add/update/enable/disable; управление расписанием рассылки публикаций — НЕ ГОТОВО.
+- Stats (по ТЗ): sub/unsub за период + дельта; активные пользователи; топ-5 тегов; % ошибок парсера; новые публикации по дням — НЕ ГОТОВО.
+- Export: публикации+теги за период CSV/XLSX — НЕ ГОТОВО.
+- Logging/observability: Sentry интеграция обязательна; Prometheus метрики; защита от SQLi через валидацию/ORM — частично (ORM есть, Sentry/метрики нет).
 
 ## Telegram Bot
 - FSM для /subscribe (поштучно по категориям) и /unsubscribe частичной/полной.
@@ -27,6 +27,7 @@
 - Уведомления: новые публикации по расписанию; дедлайны (deadline_at) с учётом `deadline_reminder`.
 - Block handling: `my_chat_member` → refused_at, is_active=false, чистка предпочтений.
 - Формат сообщений: единый шаблон + [UPD] при изменении.
+- Рассылка в канал по расписанию; Redis кеш горячих выборок; [UPD] при изменении публикаций (согласно ТЗ).
 
 ## Common / Infra
 - SQLAlchemy репозитории для Publication, Tag, TgUser, Subscriptions, UserPreferences, Parser, ParsingResult, AdminUser.
