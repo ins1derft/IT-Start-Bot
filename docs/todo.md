@@ -1,7 +1,7 @@
 # TODO (shortlist)
 
 - [x] SQLAlchemy models + репозитории для всех сущностей (Publication, Tag, TgUser, Subscriptions, UserPreferences, Parser, ParsingResult, AdminUser).
-- [ ] Pydantic схемы и сериализация API/бота; юнит-тесты на маппинг.
+- [x] Pydantic схемы для чтения + базовые тесты.
 - [ ] Auth (Argon2, JWT/сессии, TOTP, rate limit), интегр. тесты login/refresh/2FA.
 - [ ] Admin users CRUD + аудит; тесты ролей/доступа.
 - [ ] Publications/Tags CRUD с фильтрами и статусами, причина отклонения; интегр. тесты.

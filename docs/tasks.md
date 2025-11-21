@@ -7,6 +7,7 @@
 - [x] Docker окружение (db, redis, core-api, tg-bot), токен бота установлен.
 - [x] SQLAlchemy модели + репозитории, сессионные зависимости; smoke-проверка ORM vs БД.
 - [x] Базовые автотесты (healthz, ORM репозитории) и pytest каркас.
+- [x] Pydantic схемы (read) и тесты на них.
 
 ## Core API (admin panel)
 - Auth/2FA: login, refresh/session, change password, setup/confirm/disable TOTP; Argon2 hashing + rate limit.
