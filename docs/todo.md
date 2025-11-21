@@ -12,5 +12,5 @@
 - [x] Celery задачи: рассылки, дедлайны, cleanup; базовые тесты.
 - [x] PGP шифрование contact_info_encrypted; юнит-тест шифрования.
 - [x] Метрики Prometheus и Sentry контекст; smoke-тест метрик/healthz.
-- [ ] Покрытие ≥80% доменной логики (pytest+coverage).
-- [ ] CI: сборка Docker образов (core-api, tg-bot), прогон тестов/линтов, публикация артефактов.
+- [x] Покрытие ≥80% доменной логики (pytest+coverage).
+- [x] CI: сборка Docker образов (core-api, tg-bot), прогон тестов/линтов.

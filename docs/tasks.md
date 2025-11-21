@@ -34,9 +34,9 @@
 - DTO/schemas (Pydantic v2) для API/бота.
 - Celery: отправка рассылок, дедлайн-ремайндеры, cleanup старых публикаций — ГОТОВО (tasks + tests).
 - PGP encrypt/decrypt для contact_info_encrypted — ГОТОВО.
-- Pre-commit подключить в CI — НЕ ГОТОВО.
+- Pre-commit подключить в CI — ГОТОВО (workflow ci.yml).
 - Метрики/логи: Sentry, Prometheus endpoint, структурированные логи — ГОТОВО.
-- Контейнеризация: Dockerfile.core, Dockerfile.bot, docker-compose (db+redis+сервисы); CI job для сборки образов — частично (CI job не готов).
+- Контейнеризация: Dockerfile.core, Dockerfile.bot, docker-compose (db+redis+сервисы); CI job для сборки образов — ГОТОВО (ci.yml).
 
 ## Deliverables per milestone
 - M1: Domain repos + API auth stub + бот /start,/help + healthz + миграции (готово частично: миграции, healthz, каркас).

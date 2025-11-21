@@ -36,6 +36,7 @@ class PublicationRead(Model):
     tags: List[TagRead] = Field(default_factory=list)
     status: str
     decline_reason: Optional[str] = None
+    editor_id: Optional[UUID] = None
 
 
 class TgUserRead(Model):

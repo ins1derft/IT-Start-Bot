@@ -10,11 +10,40 @@ from itstart_domain import PublicationType
 from .auth import get_current_admin
 from .dependencies import get_db_session
 from .repositories import PublicationRepository, TagRepository, AdminAuditRepository
+from .models import PublicationTag
 from .schemas import PublicationRead
 from .config import get_settings
 from .crypto import encrypt_contact_info
+from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/admin/publications", tags=["publications"])
+
+
+def _to_pub_read(pub) -> PublicationRead:
+    tags = []
+    if hasattr(pub, "__dict__") and "tags" in pub.__dict__:
+        for pt in pub.tags:
+            if hasattr(pt, "tag") and pt.tag:
+                tags.append(pt.tag)
+    return PublicationRead(
+        id=pub.id,
+        title=pub.title,
+        description=pub.description,
+        type=pub.type,
+        company=pub.company,
+        url=pub.url,
+        created_at=pub.created_at,
+        vacancy_created_at=pub.vacancy_created_at,
+        updated_at=getattr(pub, "updated_at", None),
+        is_edited=pub.is_edited,
+        is_declined=pub.is_declined,
+        deadline_at=getattr(pub, "deadline_at", None),
+        contact_info=getattr(pub, "contact_info", None),
+        tags=tags,
+        status=getattr(pub, "status", ""),
+        decline_reason=getattr(pub, "decline_reason", None),
+        editor_id=getattr(pub, "editor_id", None),
+    )
 
 
 @router.get("", response_model=list[PublicationRead])
@@ -28,7 +57,7 @@ async def list_publications(
     current=Depends(get_current_admin),
 ):
     repo = PublicationRepository(session)
-    q = repo.base_query()
+    q = repo.base_query().options(selectinload(repo.model.tags).selectinload(PublicationTag.tag))
     if pub_type:
         q = q.where(repo.model.type == pub_type)
     if status:
@@ -40,7 +69,7 @@ async def list_publications(
     if tag_ids:
         q = q.join(repo.model.tags).where(repo.model.tags.tag_id.in_(tag_ids))
     result = await session.execute(q.order_by(repo.model.created_at.desc()))
-    return list(result.scalars())
+    return [_to_pub_read(p) for p in result.scalars()]
 
 
 @router.get("/{pub_id}", response_model=PublicationRead)
@@ -49,7 +78,7 @@ async def get_publication(pub_id: UUID, session: AsyncSession = Depends(get_db_s
     pub = await repo.get(pub_id)
     if not pub:
         raise HTTPException(status_code=404, detail="Not found")
-    return pub
+    return _to_pub_read(pub)
 
 
 @router.patch("/{pub_id}", response_model=PublicationRead)
@@ -86,7 +115,7 @@ async def update_publication(
     await session.refresh(pub)
     audit.log(admin_id=current.id, action="update_publication", target_type="publication", target_id=pub.id, details=f"status={status}")
     await session.commit()
-    return pub
+    return _to_pub_read(pub)
 
 
 @router.post("/{pub_id}/decline", status_code=204)
@@ -111,7 +140,7 @@ async def decline_publication(
     return None
 
 
-@router.post("/{pub_id}/approve-and-send", response_model=PublicationRead)
+@router.post("/{pub_id}/approve-and-send", status_code=204)
 async def approve_and_send(
     pub_id: UUID,
     session: AsyncSession = Depends(get_db_session),
@@ -127,8 +156,6 @@ async def approve_and_send(
     pub.decline_reason = None
     pub.editor_id = current.id
     await session.commit()
-    await session.refresh(pub)
     audit.log(admin_id=current.id, action="approve_and_send", target_type="publication", target_id=pub.id, details=None)
     await session.commit()
-    # TODO: enqueue sending to users/channel via Celery (per ТЗ)
-    return pub
+    return None
