@@ -32,9 +32,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     engine = build_engine(settings)
     session_maker = build_session_maker(engine)
 
+    tags_metadata = [
+        {"name": "auth", "description": "Логин, 2FA, смена пароля, профайл администратора."},
+        {"name": "admin-users", "description": "Управление пользователями админки и ролями."},
+        {"name": "tags", "description": "Справочник тегов: создание, редактирование, удаление."},
+        {"name": "publications", "description": "CRUD публикаций, модерация, ручная отправка."},
+        {"name": "parsers", "description": "Управление источниками/агентами парсинга."},
+        {"name": "schedule", "description": "Настройки расписаний рассылки публикаций."},
+        {"name": "stats", "description": "Статистика пользователей, тегов, парсеров, публикаций."},
+        {"name": "export", "description": "Экспорт публикаций в CSV/XLSX."},
+        {"name": "metrics", "description": "health/metrics endpoints для мониторинга."},
+    ]
+
     app = FastAPI(
         title="ITStart Core API",
         version="0.1.0",
+        openapi_tags=tags_metadata,
+        docs_url="/docs",
+        redoc_url="/redoc",
     )
 
     # Dependency wiring placeholder; once repos are added, inject get_session.
