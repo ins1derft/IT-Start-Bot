@@ -1,0 +1,20 @@
+# Python / tooling
+__pycache__/
+*.pyc
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.idea/
+.vscode/
+dist/
+build/
+
+# Environment / local overrides
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,15 @@
+# TODO (shortlist)
+
+- [ ] SQLAlchemy models + репозитории для всех сущностей (Publication, Tag, TgUser, Subscriptions, UserPreferences, Parser, ParsingResult, AdminUser).
+- [ ] Pydantic схемы и сериализация API/бота; юнит-тесты на маппинг.
+- [ ] Auth (Argon2, JWT/сессии, TOTP, rate limit), интегр. тесты login/refresh/2FA.
+- [ ] Admin users CRUD + аудит; тесты ролей/доступа.
+- [ ] Publications/Tags CRUD с фильтрами и статусами, причина отклонения; интегр. тесты.
+- [ ] Parsers CRUD + schedule; поля last_parsed_at; тесты enum parser_type.
+- [ ] Stats endpoints и экспорт CSV/XLSX; контрактные тесты.
+- [ ] Bot: парсер аргументов, FSM /subscribe, /unsubscribe, /preferences, поисковые команды; модульные тесты на парсинг и FSM.
+- [ ] Celery задачи: рассылки, дедлайны, cleanup; тесты на идемпотентность/планирование.
+- [ ] PGP шифрование contact_info_encrypted; юнит-тесты шифр/дешифр.
+- [ ] Метрики Prometheus и Sentry контекст; smoke-тест метрик/healthz.
+- [ ] Покрытие ≥80% доменной логики (pytest+coverage).
+- [ ] CI: сборка Docker образов (core-api, tg-bot), прогон тестов/линтов, публикация артефактов.
