@@ -10,8 +10,8 @@
 - [x] Pydantic схемы (read) и тесты на них.
 
 ## Core API (admin panel)
-- Auth/2FA: login, refresh/session, change password, setup/confirm/disable TOTP; Argon2 hashing + rate limit. (login + rate-limit готов)
-- Admin users: list/create (JWT, роль admin) — готово; осталось edit/disable, аудит.
+- Auth/2FA: login + refresh + change password + rate limit готовы; осталось setup/confirm/disable TOTP.
+- Admin users: list/create + patch (role/is_active/password) + disable готовы; осталось аудит.
 - Admin users CRUD (admin/moderator), is_active, audit лог.
 - Publications CRUD: list/get/patch (title/description, is_edited) готово; осталось фильтры по тегам/статусам, decline+reason, approve-and-send, editor_id.
 - Tags CRUD (enum category, unique (name, category)) — базовый list/create/update/delete готов.
