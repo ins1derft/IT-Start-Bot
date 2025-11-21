@@ -108,7 +108,9 @@ async def test_block_user_clears_preferences_and_subscriptions():
         await session.commit()
 
         # create subscriptions
-        await subscribe_tokens(session, tg_id=321, tokens=["jobs", "remote", "разработчик", "python"])
+        await subscribe_tokens(
+            session, tg_id=321, tokens=["jobs", "remote", "разработчик", "python"]
+        )
         prefs_before = await get_preferences(session, 321)
         assert prefs_before
 
