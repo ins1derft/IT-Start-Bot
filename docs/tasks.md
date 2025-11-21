@@ -20,14 +20,14 @@
 - Logging/observability: Sentry интеграция обязательна; Prometheus метрики; защита от SQLi через валидацию/ORM — частично (ORM есть, Sentry/метрики нет).
 
 ## Telegram Bot
-- FSM для /subscribe (поштучно по категориям) и /unsubscribe частичной/полной.
-- Парсинг аргументов для /subscribe, /unsubscribe, /jobs|/internships|/conferences (ru/lat, #tag).
-- /preferences: группировка по категориям, inline edit/delete.
-- Поиск: последние 10 not declined по типу; фильтр по тегам пересечением.
-- Уведомления: новые публикации по расписанию; дедлайны (deadline_at) с учётом `deadline_reminder`.
-- Block handling: `my_chat_member` → refused_at, is_active=false, чистка предпочтений.
-- Формат сообщений: единый шаблон + [UPD] при изменении.
-- Рассылка в канал по расписанию; Redis кеш горячих выборок; [UPD] при изменении публикаций (согласно ТЗ).
+- FSM для /subscribe (поштучно) и /unsubscribe частичной/полной — базовый вариант готов (state на ввод тегов при пустых аргументах).
+- Парсинг аргументов для /subscribe, /unsubscribe, /jobs|/internships|/conferences (ru/lat, #tag) — ГОТОВО.
+- /preferences: вывод группировкой по категориям — ГОТОВО.
+- Поиск: последние 10 not declined по типу; фильтр по тегам — ГОТОВО.
+- Уведомления: новые публикации по расписанию; дедлайны (deadline_at) с учётом `deadline_reminder` — НЕ ГОТОВО.
+- Block handling: `my_chat_member` → refused_at, is_active=false, чистка предпочтений — НЕ ГОТОВО.
+- Формат сообщений: единый шаблон + [UPD] при изменении — НЕ ГОТОВО.
+- Рассылка в канал по расписанию; Redis кеш горячих выборок; [UPD] при изменении публикаций — НЕ ГОТОВО.
 
 ## Common / Infra
 - SQLAlchemy репозитории для Publication, Tag, TgUser, Subscriptions, UserPreferences, Parser, ParsingResult, AdminUser.
