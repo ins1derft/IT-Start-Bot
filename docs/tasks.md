@@ -11,6 +11,7 @@
 
 ## Core API (admin panel)
 - Auth/2FA: login, refresh/session, change password, setup/confirm/disable TOTP; Argon2 hashing + rate limit. (login endpoint + Argon2 готов)
+- Admin users: list/create (JWT, роль admin) — готово; осталось edit/disable, аудит.
 - Admin users CRUD (admin/moderator), is_active, audit лог.
 - Publications CRUD: list (фильтры тип/теги/статус/дата), detail, edit (is_edited, editor_id), decline+reason, approve-and-send.
 - Tags CRUD (enum category, unique (name, category)).
