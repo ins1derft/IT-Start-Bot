@@ -12,7 +12,7 @@
 ## Core API (admin panel)
 - Auth/2FA: login + refresh + change password + rate limit + TOTP setup/confirm/disable + VPN/White list IP ГОТОВО; осталось финализировать политику запрета отключения 2FA для admin (логика уже запрещает).
 - Admin users: list/create/patch(role,is_active,password)/disable + аудит ГОТОВО; соблюдать права (admin — всё, moderator — только публикации) при новых роутингах.
-- Publications: list/get/patch(title/description,is_edited) ГОТОВО; осталось фильтры по дате/типу/тегам, статусы модерации (новая/отклонена/готова/отправлена), decline с reason, approve-and-send, editor_id, [UPD]-рассылка при изменениях.
+- Publications: list/get/patch(title/description,is_edited,status) + decline(reason) + approve-and-send (статус sent) + фильтры по статусу/дате/типу/тегам ГОТОВО; осталось: статусы модерации в UI, editor_id отображение, [UPD]-рассылка/канал.
 - Tags: CRUD ГОТОВО; требуется предзаполнение базовых значений по категориям из ТЗ.
 - Parsers & schedule: list/add/update/enable/disable; управление расписанием рассылки публикаций — НЕ ГОТОВО.
 - Stats (по ТЗ): sub/unsub за период + дельта; активные пользователи; топ-5 тегов; % ошибок парсера; новые публикации по дням — НЕ ГОТОВО.
