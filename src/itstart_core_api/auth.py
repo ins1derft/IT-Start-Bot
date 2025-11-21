@@ -12,9 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .config import Settings, get_settings
 from .dependencies import get_db_session
 from .repositories import AdminUserRepository
+from .rate_limiter import InMemoryRateLimiter
 from uuid import UUID
 
 http_bearer = HTTPBearer(auto_error=False)
+login_limiter = InMemoryRateLimiter(window_seconds=60, max_hits=5)
 from .security import verify_password
 
 
@@ -67,6 +69,7 @@ async def login(
     session: AsyncSession = Depends(get_db_session),
     settings: Settings = Depends(get_settings),
 ):
+    login_limiter.check(payload.username)
     repo = AdminUserRepository(session)
     user = await repo.get_by_username(payload.username)
     if not user or not user.is_active or not verify_password(payload.password, user.password_hash):
