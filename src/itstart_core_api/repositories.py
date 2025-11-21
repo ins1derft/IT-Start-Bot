@@ -182,3 +182,54 @@ class ParserRepository(BaseRepository):
     async def list_active(self) -> list[Parser]:
         result = await self.session.execute(select(Parser).where(Parser.is_active == True))  # noqa: E712
         return list(result.scalars())
+
+    def base_query(self):
+        return select(Parser)
+
+    async def get(self, parser_id: UUID) -> Optional[Parser]:
+        return await self.session.get(Parser, parser_id)
+
+    def create(
+        self,
+        source_name: str,
+        executable_file_path: str,
+        type: ParserType,
+        parsing_interval: int,
+        parsing_start_time: datetime.datetime,
+        is_active: bool = True,
+    ) -> Parser:
+        parser = Parser(
+            source_name=source_name,
+            executable_file_path=executable_file_path,
+            type=type,
+            parsing_interval=parsing_interval,
+            parsing_start_time=parsing_start_time,
+            is_active=is_active,
+        )
+        self.session.add(parser)
+        return parser
+
+    async def update(
+        self,
+        parser: Parser,
+        *,
+        source_name: Optional[str] = None,
+        executable_file_path: Optional[str] = None,
+        type: Optional[ParserType] = None,
+        parsing_interval: Optional[int] = None,
+        parsing_start_time: Optional[datetime.datetime] = None,
+        is_active: Optional[bool] = None,
+    ) -> Parser:
+        if source_name is not None:
+            parser.source_name = source_name
+        if executable_file_path is not None:
+            parser.executable_file_path = executable_file_path
+        if type is not None:
+            parser.type = type
+        if parsing_interval is not None:
+            parser.parsing_interval = parsing_interval
+        if parsing_start_time is not None:
+            parser.parsing_start_time = parsing_start_time
+        if is_active is not None:
+            parser.is_active = is_active
+        return parser
