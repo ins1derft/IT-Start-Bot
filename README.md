@@ -12,7 +12,7 @@
 ## Быстрый старт
 
 1. Создать `.env` на основе `.env.example` (DSN по умолчанию: `postgresql+asyncpg://itstart:itstart@localhost:5432/itstart`).
-2. Установить зависимости: `poetry install` (Python 3.10+).
+2. Установить зависимости: `poetry install` (Python 3.10+) — создаст изолированный venv.
 3. Применить миграции: `alembic upgrade head` (используется DSN из `alembic.ini` или переменная `POSTGRES_DSN`).
 4. Запустить API: `poetry run itstart-core-api`.
 5. Запустить бота: `poetry run itstart-tg-bot` (перед стартом проверяет подключение к БД).
