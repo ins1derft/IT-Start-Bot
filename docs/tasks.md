@@ -4,6 +4,8 @@
 - [x] Каркас монорепо (FastAPI + aiogram 3 + общий домен).
 - [x] Базовые миграции 0001/0002, синхронизация с ТЗ по БД.
 - [x] DDL/ADR/конституция зафиксированы.
+- [x] Docker окружение (db, redis, core-api, tg-bot), токен бота установлен.
+- [x] SQLAlchemy модели + репозитории, сессионные зависимости; smoke-проверка ORM vs БД.
 
 ## Core API (admin panel)
 - Auth/2FA: login, refresh/session, change password, setup/confirm/disable TOTP; Argon2 hashing + rate limit.

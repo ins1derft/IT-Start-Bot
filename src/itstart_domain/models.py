@@ -1,7 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime
-from enum import StrEnum
+try:  # Python 3.11+
+    from enum import StrEnum
+except ImportError:  # Python 3.10 fallback
+    from enum import Enum
+
+    class StrEnum(str, Enum):  # type: ignore
+        pass
 from typing import Optional, Sequence
 from uuid import UUID
 
