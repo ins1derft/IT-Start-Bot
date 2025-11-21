@@ -4,10 +4,9 @@ import datetime
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException
+from itstart_domain import AdminRole
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from itstart_domain import AdminRole
 
 from .auth import get_current_admin
 from .dependencies import get_db_session

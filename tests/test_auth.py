@@ -3,13 +3,12 @@ from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-
 from itstart_core_api import models
 from itstart_core_api.config import Settings
 from itstart_core_api.dependencies import get_db_session
 from itstart_core_api.main import create_app
 from itstart_core_api.security import hash_password
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 
 @pytest.mark.asyncio

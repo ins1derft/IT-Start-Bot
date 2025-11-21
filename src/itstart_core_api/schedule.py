@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from itstart_domain import AdminRole, PublicationType
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .auth import get_current_admin
 from .dependencies import get_db_session

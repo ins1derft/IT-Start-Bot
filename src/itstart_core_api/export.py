@@ -5,11 +5,10 @@ import datetime
 import io
 
 from fastapi import APIRouter, Depends, HTTPException, Response
+from itstart_domain import AdminRole
 from openpyxl import Workbook
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from itstart_domain import AdminRole
 
 from .auth import get_current_admin
 from .dependencies import get_db_session

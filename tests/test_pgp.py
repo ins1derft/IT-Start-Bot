@@ -1,6 +1,5 @@
 import pgpy
 import pytest
-
 from itstart_core_api.crypto import encrypt_contact_info
 
 

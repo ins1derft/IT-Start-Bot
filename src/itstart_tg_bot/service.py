@@ -6,7 +6,6 @@ from collections.abc import Iterable
 from uuid import UUID
 
 import redis.asyncio as redis
-
 from itstart_core_api import models
 from itstart_core_api.repositories import (
     PublicationRepository,
