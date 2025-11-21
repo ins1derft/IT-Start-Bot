@@ -35,10 +35,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Dependency wiring placeholder; once repos are added, inject get_session.
     app.state.engine = engine
     app.state.session_maker = session_maker
-    app.dependency_overrides = {
-        # Future router deps can pull session via Depends(app.state.get_session)
-    }
-
     app.dependency_overrides = {}
     app.include_router(router, dependencies=[])
     app.include_router(auth_router)
