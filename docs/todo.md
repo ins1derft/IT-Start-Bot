@@ -6,7 +6,7 @@
 - [x] Admin users: аудит операций; enforce role scope (admin full, moderator — только публикации); e2e тесты доступа.
 - [x] Publications: фильтры (дата/тип/теги/статус), decline+reason, approve-and-send; статусы добавлены; осталось editor_id отображение и [UPD] рассылка.
 - [x] Tags: предзаполнить базовые значения по категориям (из ТЗ), добавить e2e с публикациями (сидинг готов).
-- [x] Parsers CRUD/enable/disable + аудит; осталось schedule/beat.
+- [x] Parsers CRUD/enable/disable + аудит; schedule/beat базовая конфигурация добавлена.
 - [x] Stats endpoints (users/tags/parsers/publications) и экспорт CSV/XLSX.
 - [x] Bot: парсер аргументов, FSM (/subscribe step input), /unsubscribe, /preferences, поисковые команды; модульные тесты на парсинг/логика. Осталось: уведомления, формат [UPD], канал, Redis кеш.
 - [ ] Celery задачи: рассылки, дедлайны, cleanup; тесты на идемпотентность/планирование.

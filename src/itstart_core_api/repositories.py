@@ -20,6 +20,7 @@ from .models import (
     TgUserSubscription,
     TgUserSubscriptionTag,
     UserPreference,
+    PublicationSchedule,
 )
 
 
@@ -235,3 +236,36 @@ class ParserRepository(BaseRepository):
         if is_active is not None:
             parser.is_active = is_active
         return parser
+
+
+class PublicationScheduleRepository(BaseRepository):
+    model = PublicationSchedule
+
+    def base_query(self):
+        return select(PublicationSchedule)
+
+    async def get_by_type(self, publication_type: PublicationType) -> Optional[PublicationSchedule]:
+        result = await self.session.execute(select(PublicationSchedule).where(PublicationSchedule.publication_type == publication_type))
+        return result.scalar_one_or_none()
+
+    async def upsert(
+        self,
+        publication_type: PublicationType,
+        interval_minutes: int,
+        start_time: Optional[datetime.datetime] = None,
+        is_active: bool = True,
+    ) -> PublicationSchedule:
+        existing = await self.get_by_type(publication_type)
+        if existing:
+            existing.interval_minutes = interval_minutes
+            existing.start_time = start_time
+            existing.is_active = is_active
+            return existing
+        schedule = PublicationSchedule(
+            publication_type=publication_type,
+            interval_minutes=interval_minutes,
+            start_time=start_time,
+            is_active=is_active,
+        )
+        self.session.add(schedule)
+        return schedule

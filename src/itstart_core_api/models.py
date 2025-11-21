@@ -129,6 +129,18 @@ class UserPreference(Base):
     tag = relationship("Tag")
 
 
+class PublicationSchedule(Base):
+    __tablename__ = "publication_schedule"
+    __table_args__ = (UniqueConstraint("publication_type", name="uq_publication_schedule_type"),)
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    publication_type = Column(Enum(PublicationType, name="publication_type"), nullable=False)
+    interval_minutes = Column(Integer, nullable=False)
+    start_time = Column(DateTime, nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class Parser(Base):
     __tablename__ = "parser"
 

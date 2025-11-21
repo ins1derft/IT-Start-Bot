@@ -2,6 +2,7 @@
 
 ## Enums (факт)
 - `publication_type`: job | internship | conference
+- `publication_status`: new | declined | ready | sent
 - `tag_category`: format | occupation | platform | language | location | technology | duration
 - `admin_role`: admin | moderator
 - `parser_type`: api_client | website_parser | tg_channel_parser
@@ -12,7 +13,7 @@
   - source_id (uuid, nullable)
   - created_at, vacancy_created_at
   - updated_at, editor_id (uuid, nullable)
-  - is_edited bool, is_declined bool
+  - is_edited bool, is_declined bool, status (publication_status), decline_reason text
   - deadline_at (nullable)
   - contact_info (plain, nullable), contact_info_encrypted bytea (PGP data)
 - `tag`: id (uuid PK), name, category (tag_category), unique (name, category)
@@ -29,6 +30,7 @@
 - `parser`: id (uuid PK), source_name, executable_file_path, type (parser_type), parsing_interval int, parsing_start_time timestamp, last_parsed_at timestamp, is_active bool
 - `parsing_result`: id (uuid PK), date, parser_id FK -> parser, success bool, received_amount int
 - `admin_user`: id (uuid PK), username unique, password_hash, role (admin_role), is_active bool, otp_secret nullable, created_at default now()
+- `publication_schedule`: id (uuid PK), publication_type (enum), interval_minutes int, start_time timestamp null, is_active bool, updated_at timestamp
 
 ## Relationships
 - publication : tag — many-to-many via publication_tags
@@ -44,3 +46,4 @@
 - parsing_result (parser_id, date)
 - tg_user (refused_at)
 - tg_user_subscriptions (user_id, publication_type)
+- publication_schedule (publication_type)

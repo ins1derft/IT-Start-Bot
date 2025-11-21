@@ -82,6 +82,21 @@ class ParsingResultRead(Model):
     received_amount: int
 
 
+class PublicationScheduleRead(Model):
+    id: UUID
+    publication_type: PublicationType
+    interval_minutes: int
+    start_time: Optional[datetime]
+    is_active: bool
+    updated_at: datetime
+
+
+class PublicationScheduleUpdate(BaseModel):
+    job_interval_minutes: Optional[int] = None
+    internship_interval_minutes: Optional[int] = None
+    conference_interval_minutes: Optional[int] = None
+
+
 class AdminUserRead(Model):
     id: UUID
     username: str
