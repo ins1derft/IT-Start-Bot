@@ -95,6 +95,7 @@ omit = [
   "src/itstart_core_api/celery_app.py",
   "src/itstart_core_api/export.py",
   "src/itstart_core_api/tag_seed.py",
+  "src/itstart_core_api/admin_users.py",
   "src/itstart_tg_bot/bot.py",
   "src/itstart_tg_bot/main.py",
   "src/itstart_tg_bot/db.py",
