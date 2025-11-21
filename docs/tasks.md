@@ -13,8 +13,8 @@
 - Auth/2FA: login, refresh/session, change password, setup/confirm/disable TOTP; Argon2 hashing + rate limit. (login + rate-limit готов)
 - Admin users: list/create (JWT, роль admin) — готово; осталось edit/disable, аудит.
 - Admin users CRUD (admin/moderator), is_active, audit лог.
-- Publications CRUD: list (фильтры тип/теги/статус/дата), detail, edit (is_edited, editor_id), decline+reason, approve-and-send.
-- Tags CRUD (enum category, unique (name, category)).
+- Publications CRUD: list/get/patch (title/description, is_edited) готово; осталось фильтры по тегам/статусам, decline+reason, approve-and-send, editor_id.
+- Tags CRUD (enum category, unique (name, category)) — базовый list/create/update/delete готов.
 - Parsers & schedule: list/add/update/enable/disable; schedule endpoints для рассылок.
 - Stats: users (sub/unsub delta), active users, top-5 tags, parser error %, publications per day.
 - Export: publications+tags CSV/XLSX by date range.
