@@ -10,7 +10,7 @@
 - [x] Pydantic схемы (read) и тесты на них.
 
 ## Core API (admin panel)
-- Auth/2FA: login + refresh + change password + rate limit ГОТОВО; осталось setup/confirm/disable TOTP, поддержка VPN/White list IP (требование ТЗ).
+- Auth/2FA: login + refresh + change password + rate limit + TOTP setup/confirm/disable + VPN/White list IP ГОТОВО; осталось финализировать политику запрета отключения 2FA для admin (логика уже запрещает).
 - Admin users: list/create/patch(role,is_active,password)/disable ГОТОВО; осталось аудит действий и строгие права (admin — всё, moderator — только публикации).
 - Publications: list/get/patch(title/description,is_edited) ГОТОВО; осталось фильтры по дате/типу/тегам, статусы модерации (новая/отклонена/готова/отправлена), decline с reason, approve-and-send, editor_id, [UPD]-рассылка при изменениях.
 - Tags: CRUD ГОТОВО; требуется предзаполнение базовых значений по категориям из ТЗ.
