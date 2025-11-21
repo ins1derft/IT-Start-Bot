@@ -17,6 +17,7 @@ fastapi = "^0.110.0"
 uvicorn = { extras = ["standard"], version = "^0.30.0" }
 sqlalchemy = { extras = ["asyncio"], version = "^2.0.30" }
 asyncpg = "^0.29.0"
+aiosqlite = "^0.20.0"
 alembic = "^1.13.1"
 pydantic = "^2.8.2"
 pydantic-settings = "^2.2.1"
@@ -97,4 +98,6 @@ omit = [
   "src/itstart_tg_bot/bot.py",
   "src/itstart_tg_bot/main.py",
   "src/itstart_tg_bot/db.py",
+  "src/itstart_core_api/dependencies.py",
+  "src/itstart_common/db.py",
 ]
