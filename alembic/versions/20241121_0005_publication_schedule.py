@@ -19,7 +19,11 @@ def upgrade() -> None:
     op.create_table(
         "publication_schedule",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, default=uuid4),
-        sa.Column("publication_type", sa.Enum(name="publication_type"), nullable=False),
+        sa.Column(
+            "publication_type",
+            postgresql.ENUM(name="publication_type", create_type=False),
+            nullable=False,
+        ),
         sa.Column("interval_minutes", sa.Integer(), nullable=False),
         sa.Column("start_time", sa.DateTime(), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("true")),

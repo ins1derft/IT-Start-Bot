@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import Enum, ForeignKey, Index, LargeBinary, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Enum, ForeignKey, Index, LargeBinary, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -84,7 +84,7 @@ class TgUser(Base):
     __table_args__ = (UniqueConstraint("tg_id", name="uq_tg_user_tg_id"),)
 
     id: Mapped[UUID] = uuid_pk()
-    tg_id: Mapped[int] = mapped_column(nullable=False)
+    tg_id: Mapped[int] = mapped_column(BigInteger(), nullable=False)
     register_at: Mapped[datetime] = mapped_column(nullable=False)
     refused_at: Mapped[datetime | None]
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
