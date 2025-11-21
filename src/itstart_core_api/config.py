@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     secret_key: str = "change-me"
     access_token_ttl_sec: int = 3600
     refresh_token_ttl_sec: int = 60 * 60 * 24 * 14
+    allowed_login_ips: list[str] = Field(default_factory=list)
     sentry_dsn: Optional[str] = None
     prometheus_port: int = 9090
 
