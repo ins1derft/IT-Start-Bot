@@ -8,6 +8,11 @@ services:
       POSTGRES_PASSWORD: itstart
     volumes:
       - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U itstart -d itstart"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -23,8 +28,10 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       API_HOST: 0.0.0.0
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     ports:
       - "8000:8000"
 
@@ -38,9 +45,23 @@ services:
       POSTGRES_DSN: ${POSTGRES_DSN:-postgresql+asyncpg://itstart:itstart@db:5432/itstart}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     # No public ports; bot works via Telegram API
+
+  admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.admin
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+    ports:
+      - "${ADMIN_PORT:-3000}:80"
+    depends_on:
+      - core-api
+    restart: unless-stopped
 
 volumes:
   db_data:
