@@ -14,12 +14,19 @@ from itstart_domain import AdminRole
 
 from .config import Settings, get_settings
 from .dependencies import get_db_session
-from .rate_limiter import InMemoryRateLimiter
+from .rate_limiter import InMemoryRateLimiter, RedisRateLimiter
 from .repositories import AdminUserRepository
 from .security import hash_password, verify_password
 
 http_bearer = HTTPBearer(auto_error=False)
-login_limiter = InMemoryRateLimiter(window_seconds=60, max_hits=5)
+_settings = get_settings()
+login_limiter: InMemoryRateLimiter | RedisRateLimiter
+if _settings.redis_url:
+    login_limiter = RedisRateLimiter(
+        redis_url=_settings.redis_url, window_seconds=60, max_hits=5, prefix="login"
+    )
+else:
+    login_limiter = InMemoryRateLimiter(window_seconds=60, max_hits=5)
 
 
 class LoginRequest(BaseModel):
@@ -87,7 +94,7 @@ async def login(
     session: AsyncSession = Depends(get_db_session),
     settings: Settings = Depends(get_settings),
 ):
-    login_limiter.check(payload.username)
+    await login_limiter.check(payload.username)
 
     if settings.allowed_login_ips:
         client_ip = request.client.host if request.client else None

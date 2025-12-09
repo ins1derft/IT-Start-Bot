@@ -6,10 +6,10 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files
-COPY src/itstart_admin/package.json ./
+COPY src/itstart_admin/package.json src/itstart_admin/package-lock.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies (deterministic)
+RUN npm ci
 
 # Copy source code
 COPY src/itstart_admin ./
@@ -35,4 +35,3 @@ EXPOSE 80
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
-

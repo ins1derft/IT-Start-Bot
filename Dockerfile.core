@@ -22,5 +22,8 @@ COPY alembic ./alembic
 COPY alembic.ini .
 COPY src ./src
 COPY docs ./docs
+COPY docker ./docker
+RUN chmod +x docker/entrypoint_core.sh
 EXPOSE 8000
+ENTRYPOINT ["./docker/entrypoint_core.sh"]
 CMD ["itstart-core-api"]
