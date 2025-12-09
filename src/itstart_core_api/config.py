@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     pgp_public_key: str | None = Field(None, validation_alias="PGP_PUBLIC_KEY")
     bot_token: str | None = Field(None, validation_alias="BOT_TOKEN")
     bot_channel_id: str | None = Field(None, validation_alias="BOT_CHANNEL_ID")
+    admin_default_username: str | None = Field(None, validation_alias="ADMIN_DEFAULT_USERNAME")
+    admin_default_password: str | None = Field(None, validation_alias="ADMIN_DEFAULT_PASSWORD")
+    admin_default_role: str = Field("admin", validation_alias="ADMIN_DEFAULT_ROLE")
 
 
 @lru_cache

@@ -51,7 +51,7 @@ export function DatePicker({
         <Calendar
           mode="single"
           selected={value || undefined}
-          onSelect={(date) => onChange(date || null)}
+          onSelect={(date: Date | undefined) => onChange(date ?? null)}
           initialFocus
           locale={ru}
         />
@@ -87,16 +87,17 @@ export function DateTimePicker({
     }
   }, [value])
 
-  const handleDateChange = (newDate: Date | null) => {
-    setDate(newDate)
-    if (newDate && time) {
+  const handleDateChange = (newDate?: Date | null) => {
+    const normalized = newDate ?? null
+    setDate(normalized)
+    if (normalized && time) {
       const [hours, minutes] = time.split(":")
-      const dateTime = new Date(newDate)
+      const dateTime = new Date(normalized)
       dateTime.setHours(parseInt(hours, 10))
       dateTime.setMinutes(parseInt(minutes, 10))
       onChange(dateTime)
     } else {
-      onChange(newDate)
+      onChange(normalized)
     }
   }
 
@@ -127,7 +128,7 @@ export function DateTimePicker({
             {date ? (
               format(date, "PPP", { locale: ru })
             ) : (
-              <span>Выберите дату</span>
+              <span>{placeholder}</span>
             )}
           </Button>
         </PopoverTrigger>
@@ -151,4 +152,3 @@ export function DateTimePicker({
     </div>
   )
 }
-

@@ -18,9 +18,12 @@ from .metrics import router as metrics_router
 from .parsers import router as parsers_router
 from .publications import router as publications_router
 from .schedule import router as schedule_router
+from .security import hash_password
 from .stats import router as stats_router
 from .tag_seed import TagRepository, seed_tags
 from .tags import router as tags_router
+from .repositories import AdminUserRepository
+from itstart_domain import AdminRole
 
 logger = logging.getLogger(__name__)
 
@@ -90,8 +93,29 @@ async def seed_startup():
     engine = build_engine(settings)
     Session = build_session_maker(engine)
     async with Session() as session:
-        repo = TagRepository(session)
-        await seed_tags(repo)
+        tag_repo = TagRepository(session)
+        await seed_tags(tag_repo)
+
+        # Seed default admin user if configured and not present
+        if settings.admin_default_username and settings.admin_default_password:
+            admin_repo = AdminUserRepository(session)
+            existing = await admin_repo.get_by_username(settings.admin_default_username)
+            if not existing:
+                admin_repo.create(
+                    username=settings.admin_default_username,
+                    password_hash=hash_password(settings.admin_default_password),
+                    role=AdminRole(settings.admin_default_role),
+                )
+                logger.info(
+                    "Created default admin user",
+                    extra={"username": settings.admin_default_username},
+                )
+            else:
+                logger.info(
+                    "Default admin user already exists; skipping creation",
+                    extra={"username": settings.admin_default_username},
+                )
+
         await session.commit()
 
 
