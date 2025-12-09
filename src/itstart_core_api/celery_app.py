@@ -6,7 +6,8 @@ import logging
 from typing import Any
 
 from celery import Celery
-from celery.schedules import crontab
+from celery.schedules import crontab, schedule
+from celery.beat import Scheduler, ScheduleEntry
 from sentry_sdk import init as sentry_init
 from sentry_sdk.integrations.celery import CeleryIntegration
 from sqlalchemy import select
@@ -63,6 +64,70 @@ def _build_beat_schedule(settings) -> dict[str, Any]:
     return schedule
 
 
+class PublicationScheduler(Scheduler):
+    """Dynamic scheduler that refreshes publication intervals from DB without restarts."""
+
+    def __init__(self, *args, refresh_interval: int = 60, **kwargs):
+        self.refresh_interval = refresh_interval
+        self.last_refresh: float = 0
+        self.dynamic_schedule: dict[str, ScheduleEntry] = {}
+        super().__init__(*args, **kwargs)
+
+    def setup_schedule(self):
+        # initial load
+        self._refresh_from_db(force=True)
+
+    def _refresh_from_db(self, force: bool = False):
+        now = datetime.datetime.utcnow().timestamp()
+        if not force and now - self.last_refresh < self.refresh_interval:
+            return
+        self.last_refresh = now
+        try:
+            schedules = asyncio.run(_fetch_publication_schedules())
+        except Exception:
+            logger.exception("Failed to refresh publication schedules")
+            schedules = []
+
+        base_entries: dict[str, ScheduleEntry] = {}
+        # static tasks
+        static = _build_beat_schedule(get_settings())
+        for name, entry in static.items():
+            sig = self.app.tasks[entry["task"]].s()
+            base_entries[name] = self.Entry(
+                name,
+                schedule=entry["schedule"],
+                args=sig.args,
+                kwargs=sig.kwargs,
+                options=sig.options,
+                app=self.app,
+            )
+
+        # dynamic publication send tasks
+        for row in schedules:
+            key = f"send-publications-{getattr(row.publication_type, 'value', row.publication_type)}"
+            sig = self.app.tasks["itstart_core_api.tasks.send_publications"].s()
+            base_entries[key] = self.Entry(
+                key,
+                schedule=datetime.timedelta(minutes=row.interval_minutes),
+                args=sig.args,
+                kwargs=sig.kwargs,
+                options=sig.options,
+                app=self.app,
+            )
+
+        self.dynamic_schedule = base_entries
+
+    @property
+    def schedule(self):
+        # Scheduler reads this property each tick
+        self._refresh_from_db()
+        return self.dynamic_schedule
+
+    def tick(self):
+        self._refresh_from_db()
+        return super().tick()
+
+
 def make_celery() -> Celery:
     settings = get_settings()
     if settings.sentry_dsn:
@@ -85,6 +150,7 @@ def make_celery() -> Celery:
         timezone="UTC",
         enable_utc=True,
         beat_schedule=_build_beat_schedule(settings),
+        beat_scheduler="itstart_core_api.celery_app.PublicationScheduler",
     )
     return app
 

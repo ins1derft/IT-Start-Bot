@@ -13,6 +13,7 @@ const types: Record<PublicationType, string> = {
   job: "Вакансия",
   internship: "Стажировка",
   conference: "Конференция",
+  contest: "Хакатон/конкурс",
 }
 
 export function formatPublicationType(type: PublicationType): string {
@@ -52,4 +53,3 @@ const statuses: Record<string, string> = {
 export function formatStatus(status: string): string {
   return statuses[status] || status
 }
-

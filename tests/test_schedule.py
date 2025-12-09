@@ -51,14 +51,16 @@ async def test_publication_schedule_get_and_update(monkeypatch):
     resp = client.get("/admin/schedule/publications", headers=headers)
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) == 3
+    assert len(data) == 4
 
     resp = client.patch(
         "/admin/schedule/publications",
         headers=headers,
-        json={"job_interval_minutes": 120},
+        json={"job_interval_minutes": 120, "contest_interval_minutes": 90},
     )
     assert resp.status_code == 200
     data = resp.json()
     job_row = next(r for r in data if r["publication_type"] == "job")
     assert job_row["interval_minutes"] == 120
+    contest_row = next(r for r in data if r["publication_type"] == "contest")
+    assert contest_row["interval_minutes"] == 90

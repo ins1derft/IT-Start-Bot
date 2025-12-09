@@ -39,6 +39,8 @@ def parse_tokens(
             pub_types.append(PublicationType.internship)
         elif token in ("conferences", "conference"):
             pub_types.append(PublicationType.conference)
+        elif token in ("contests", "contest", "hackathon", "hackathons", "хакатон", "хакатоны"):
+            pub_types.append(PublicationType.contest)
         elif token.startswith("#"):
             token = token[1:]
             tid = tag_lookup.get(token.lower())

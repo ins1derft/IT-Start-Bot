@@ -38,6 +38,18 @@ class PublicationRead(Model):
     editor_id: UUID | None = None
 
 
+class PublicationCreate(BaseModel):
+    title: str
+    description: str
+    type: PublicationType
+    company: str
+    url: str
+    vacancy_created_at: datetime
+    deadline_at: datetime | None = None
+    contact_info: str | None = None
+    tag_ids: list[UUID] = Field(default_factory=list)
+
+
 class TgUserRead(Model):
     id: UUID
     tg_id: int
@@ -95,6 +107,7 @@ class PublicationScheduleUpdate(BaseModel):
     job_interval_minutes: int | None = None
     internship_interval_minutes: int | None = None
     conference_interval_minutes: int | None = None
+    contest_interval_minutes: int | None = None
 
 
 class AdminUserRead(Model):

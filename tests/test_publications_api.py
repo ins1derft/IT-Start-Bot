@@ -93,3 +93,66 @@ async def test_publications_crud_flow(monkeypatch):
 
     resp = client.post(f"/admin/publications/{pub.id}/approve-and-send", headers=headers)
     assert resp.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_create_and_delete_publication(monkeypatch, tmp_path):
+    db_path = tmp_path / "pubs.db"
+    monkeypatch.setenv("POSTGRES_DSN", f"sqlite+aiosqlite:///{db_path}")
+    monkeypatch.setenv("SECRET_KEY", "secret")
+    settings = Settings(access_token_ttl_sec=3600)
+    app = create_app(settings)
+    engine = create_async_engine(settings.database_url, future=True)
+    Session = async_sessionmaker(engine, expire_on_commit=False)
+
+    async with engine.begin() as conn:
+        await conn.run_sync(models.Base.metadata.create_all)
+
+    async def override_get_db_session():
+        async with Session() as session:
+            yield session
+
+    app.dependency_overrides[get_db_session] = override_get_db_session
+    app.dependency_overrides[get_settings] = lambda: settings
+
+    async with Session() as session:
+        admin = models.AdminUser(
+            id=uuid4(),
+            username="root",
+            password_hash=hash_password("root"),
+            role=models.AdminRole.admin,
+            is_active=True,
+            created_at=datetime.datetime.utcnow(),
+        )
+        session.add(admin)
+        tag = models.Tag(id=uuid4(), name="hackathon", category=TagCategory.technology)
+        session.add(tag)
+        await session.commit()
+
+    token = _create_access_token(settings, str(admin.id))
+    client = TestClient(app)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    payload = {
+        "title": "Hack sprint",
+        "description": "desc",
+        "type": PublicationType.contest,
+        "company": "Co",
+        "url": "https://example.com/h1",
+        "vacancy_created_at": datetime.datetime.utcnow().isoformat(),
+        "tag_ids": [str(tag.id)],
+    }
+
+    resp = client.post("/admin/publications", headers=headers, json=payload)
+    assert resp.status_code == 201
+    pub_id = resp.json()["id"]
+
+    resp = client.post("/admin/publications", headers=headers, json=payload)
+    assert resp.status_code == 409
+
+    resp = client.delete(f"/admin/publications/{pub_id}", headers=headers)
+    assert resp.status_code == 204
+
+    resp = client.get("/admin/publications", headers=headers)
+    assert resp.status_code == 200
+    assert resp.json() == []

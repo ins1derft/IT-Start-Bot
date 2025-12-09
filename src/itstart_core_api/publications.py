@@ -13,9 +13,10 @@ from .auth import get_current_admin
 from .config import get_settings
 from .crypto import encrypt_contact_info
 from .dependencies import get_db_session
-from .models import PublicationTag
-from .repositories import AdminAuditRepository, PublicationRepository
-from .schemas import PublicationRead
+from .models import Publication, PublicationTag
+from .repositories import AdminAuditRepository, PublicationRepository, TagRepository
+from .schemas import PublicationCreate, PublicationRead
+from .tasks import send_publication_with_session
 
 router = APIRouter(prefix="/admin/publications", tags=["publications"])
 
@@ -45,6 +46,66 @@ def _to_pub_read(pub) -> PublicationRead:
         decline_reason=getattr(pub, "decline_reason", None),
         editor_id=getattr(pub, "editor_id", None),
     )
+
+
+@router.post("", response_model=PublicationRead, status_code=201)
+async def create_publication(
+    payload: PublicationCreate,
+    session: AsyncSession = Depends(get_db_session),
+    current=Depends(get_current_admin),
+):
+    repo = PublicationRepository(session)
+    audit = AdminAuditRepository(session)
+    tag_repo = TagRepository(session)
+
+    if await repo.exists_duplicate(
+        url=payload.url,
+        title=payload.title,
+        company=payload.company,
+        vacancy_created_at=payload.vacancy_created_at,
+    ):
+        raise HTTPException(status_code=409, detail="Duplicate publication")
+
+    pub = Publication(
+        title=payload.title,
+        description=payload.description,
+        type=payload.type,
+        company=payload.company,
+        url=payload.url,
+        created_at=datetime.datetime.utcnow(),
+        vacancy_created_at=payload.vacancy_created_at,
+        status="new",
+        is_declined=False,
+        deadline_at=payload.deadline_at,
+        contact_info=payload.contact_info,
+    )
+
+    if payload.contact_info:
+        settings = get_settings()
+        pub.contact_info_encrypted = encrypt_contact_info(payload.contact_info, settings.pgp_public_key)
+
+    session.add(pub)
+    await session.flush()
+
+    if payload.tag_ids:
+        tags = await tag_repo.get_by_ids(payload.tag_ids)
+        found_ids = {t.id for t in tags}
+        missing = set(payload.tag_ids) - found_ids
+        if missing:
+            raise HTTPException(status_code=400, detail="Some tags not found")
+        await repo.add_tags(pub.id, payload.tag_ids)
+
+    await session.commit()
+    await session.refresh(pub)
+    audit.log(
+        admin_id=current.id,
+        action="create_publication",
+        target_type="publication",
+        target_id=pub.id,
+        details=None,
+    )
+    await session.commit()
+    return _to_pub_read(pub)
 
 
 @router.get("", response_model=list[PublicationRead])
@@ -84,6 +145,30 @@ async def get_publication(
     if not pub:
         raise HTTPException(status_code=404, detail="Not found")
     return _to_pub_read(pub)
+
+
+@router.delete("/{pub_id}", status_code=204)
+async def delete_publication(
+    pub_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+    current=Depends(get_current_admin),
+):
+    repo = PublicationRepository(session)
+    audit = AdminAuditRepository(session)
+    pub = await repo.get(pub_id)
+    if not pub:
+        raise HTTPException(status_code=404, detail="Not found")
+    await session.delete(pub)
+    await session.commit()
+    audit.log(
+        admin_id=current.id,
+        action="delete_publication",
+        target_type="publication",
+        target_id=pub_id,
+        details=None,
+    )
+    await session.commit()
+    return None
 
 
 @router.patch("/{pub_id}", response_model=PublicationRead)
@@ -169,11 +254,17 @@ async def approve_and_send(
     pub = await repo.get(pub_id)
     if not pub:
         raise HTTPException(status_code=404, detail="Not found")
-    pub.status = "sent"
+    pub.status = "ready"
     pub.is_declined = False
     pub.decline_reason = None
     pub.editor_id = current.id
+    pub.updated_at = datetime.datetime.utcnow()
     await session.commit()
+
+    settings = get_settings()
+    await send_publication_with_session(session, settings, pub)
+    await session.commit()
+
     audit.log(
         admin_id=current.id,
         action="approve_and_send",

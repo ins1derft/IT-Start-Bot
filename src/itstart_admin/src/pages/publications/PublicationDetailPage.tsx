@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom"
-import { usePublication, useApproveAndSend } from "@/hooks/use-publications"
+import { usePublication, useApproveAndSend, useDeletePublication } from "@/hooks/use-publications"
 import { EditPublicationDialog } from "@/components/publications/EditPublicationDialog"
 import { DeclinePublicationDialog } from "@/components/publications/DeclinePublicationDialog"
 import { Button } from "@/components/ui/button"
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { formatDate } from "@/lib/date"
 import { formatPublicationType, formatStatus } from "@/lib/format"
-import { FiEdit, FiX, FiCheck, FiArrowLeft, FiExternalLink } from "react-icons/fi"
+import { FiEdit, FiX, FiCheck, FiArrowLeft, FiExternalLink, FiTrash2 } from "react-icons/fi"
 import { useState } from "react"
 
 export function PublicationDetailPage() {
@@ -26,6 +26,7 @@ export function PublicationDetailPage() {
   const navigate = useNavigate()
   const { data: publication, isLoading } = usePublication(id || "")
   const approveAndSend = useApproveAndSend()
+  const deletePublication = useDeletePublication()
   const [editing, setEditing] = useState(false)
   const [declining, setDeclining] = useState(false)
   const [approving, setApproving] = useState(false)
@@ -77,6 +78,19 @@ export function PublicationDetailPage() {
             <FiEdit className="h-4 w-4 mr-2" />
             Редактировать
           </Button>
+          <Button
+            variant="destructive"
+            onClick={() => {
+              if (id) {
+                deletePublication.mutate(id, {
+                  onSuccess: () => navigate("/publications"),
+                })
+              }
+            }}
+          >
+            <FiTrash2 className="h-4 w-4 mr-2" />
+            Удалить
+          </Button>
           {publication.status !== "declined" && (
             <Button
               variant="outline"
@@ -111,6 +125,12 @@ export function PublicationDetailPage() {
               <p className="text-sm text-muted-foreground">Компания</p>
               <p className="font-medium">{publication.company}</p>
             </div>
+            {publication.editor_id && (
+              <div>
+                <p className="text-sm text-muted-foreground">Редактор</p>
+                <p className="font-mono text-sm break-all">{publication.editor_id}</p>
+              </div>
+            )}
             <div>
               <p className="text-sm text-muted-foreground">Статус</p>
               <Badge
@@ -124,6 +144,11 @@ export function PublicationDetailPage() {
               >
                 {formatStatus(publication.status)}
               </Badge>
+              {publication.is_edited && (
+                <Badge variant="outline" className="ml-2">
+                  UPD
+                </Badge>
+              )}
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Ссылка</p>

@@ -18,6 +18,7 @@ async def _ensure_defaults(repo: PublicationScheduleRepository) -> None:
         PublicationType.job: 360,
         PublicationType.internship: 1440,
         PublicationType.conference: 1440,
+        PublicationType.contest: 1440,
     }
     for ptype, interval in defaults.items():
         await repo.upsert(ptype, interval_minutes=interval, start_time=None, is_active=True)
@@ -62,6 +63,10 @@ async def update_publication_schedule(
     if payload.conference_interval_minutes is not None:
         await repo.upsert(
             PublicationType.conference, interval_minutes=payload.conference_interval_minutes
+        )
+    if payload.contest_interval_minutes is not None:
+        await repo.upsert(
+            PublicationType.contest, interval_minutes=payload.contest_interval_minutes
         )
 
     await session.commit()

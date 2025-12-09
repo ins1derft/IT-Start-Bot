@@ -59,6 +59,7 @@ MAIN_MENU = ReplyKeyboardMarkup(
             KeyboardButton(text="💼 Вакансии"),
             KeyboardButton(text="🧑‍🎓 Стажировки"),
             KeyboardButton(text="🎤 Конференции"),
+            KeyboardButton(text="🏆 Хакатоны"),
         ],
         [KeyboardButton(text="ℹ️ Справка")],
     ],
@@ -66,7 +67,7 @@ MAIN_MENU = ReplyKeyboardMarkup(
 )
 
 SUBSCRIBE_TIP = (
-    "📌 Обязательные поля: типы публикаций (jobs / internships / conferences).\n"
+    "📌 Обязательные поля: типы публикаций (jobs / internships / conferences / contests).\n"
     "👉 Для jobs/internships добавьте:\n"
     "   • Сфера (occupation): разработчик, тестировщик, аналитик…\n"
     "   • Платформа или язык (platform/language): ios, android, python, csharp…\n"
@@ -91,11 +92,11 @@ def _build_dispatcher() -> Dispatcher:
     @router.message(Command("start"))
     async def cmd_start(message: types.Message) -> None:
         await message.answer(
-            "👋 Привет! Я помогу найти вакансии, стажировки и конференции.\n\n"
+            "👋 Привет! Я помогу найти вакансии, стажировки, конференции и хакатоны.\n\n"
             "📝 Подписка: /subscribe (или кнопка «Подписаться»)\n"
             "🚫 Отписка: /unsubscribe\n"
             "📋 Предпочтения: /preferences\n"
-            "🔎 Поиск: /jobs /internships /conferences\n\n"
+            "🔎 Поиск: /jobs /internships /conferences /contests\n\n"
             "Нажмите нужную кнопку ниже или введите команду.",
             reply_markup=MAIN_MENU,
         )
@@ -107,7 +108,7 @@ def _build_dispatcher() -> Dispatcher:
             "• /subscribe [теги] — подписка (без аргументов запустит мастер)\n"
             "• /unsubscribe [теги] — отписка (без аргументов запустит мастер)\n"
             "• /preferences — показать сохранённые теги\n"
-            "• /jobs /internships /conferences [теги] — быстрый поиск\n\n"
+            "• /jobs /internships /conferences /contests [теги] — быстрый поиск\n\n"
             f"{SUBSCRIBE_TIP}",
             reply_markup=MAIN_MENU,
         )
@@ -141,12 +142,13 @@ def _build_dispatcher() -> Dispatcher:
         await state.set_state(SubscribeStates.choose_types)
         await state.update_data(types=set(), occupation=None, platform=None, extra=[])
         await message.answer(
-            "🔸 Шаг 1/4. Выберите типы публикаций (jobs, internships, conferences).\n"
+            "🔸 Шаг 1/4. Выберите типы публикаций (jobs, internships, conferences, contests).\n"
             "Отправляйте по одному слову. Когда закончите — напишите «далее». Для отмены — «отмена».",
             reply_markup=ReplyKeyboardMarkup(
                 keyboard=[
                     [KeyboardButton(text="jobs"), KeyboardButton(text="internships")],
-                    [KeyboardButton(text="conferences"), KeyboardButton(text="далее")],
+                    [KeyboardButton(text="conferences"), KeyboardButton(text="contests")],
+                    [KeyboardButton(text="далее")],
                     [KeyboardButton(text="отмена")],
                 ],
                 resize_keyboard=True,
@@ -162,7 +164,7 @@ def _build_dispatcher() -> Dispatcher:
             return
         data = await state.get_data()
         chosen: set[str] = set(data.get("types", []))
-        allowed = {"jobs", "internships", "conferences"}
+        allowed = {"jobs", "internships", "conferences", "contests"}
         if text == "далее":
             if not chosen:
                 await message.answer("⚠️ Нужно выбрать хотя бы один тип.")
@@ -187,7 +189,7 @@ def _build_dispatcher() -> Dispatcher:
                 f"✅ Выбрано: {', '.join(sorted(chosen)) or 'пусто'}. Напишите ещё тип или «далее».",
             )
         else:
-            await message.answer("⚠️ Используйте jobs, internships, conferences или «далее».")
+            await message.answer("⚠️ Используйте jobs, internships, conferences, contests или «далее».")
 
     @router.message(SubscribeStates.occupation)
     async def subscribe_occupation(message: types.Message, state: FSMContext) -> None:
@@ -288,12 +290,13 @@ def _build_dispatcher() -> Dispatcher:
         await state.set_state(UnsubscribeStates.choose_types)
         await state.update_data(types=set(), tags=[])
         await message.answer(
-            "Шаг 1/2. Что отключаем: jobs / internships / conferences. "
+            "Шаг 1/2. Что отключаем: jobs / internships / conferences / contests. "
             "Отправляйте по одному, завершите словом «далее» или напишите «пропустить».",
             reply_markup=ReplyKeyboardMarkup(
                 keyboard=[
                     [KeyboardButton(text="jobs"), KeyboardButton(text="internships")],
-                    [KeyboardButton(text="conferences"), KeyboardButton(text="далее")],
+                    [KeyboardButton(text="conferences"), KeyboardButton(text="contests")],
+                    [KeyboardButton(text="далее")],
                     [KeyboardButton(text="пропустить"), KeyboardButton(text="отмена")],
                 ],
                 resize_keyboard=True,
@@ -309,7 +312,7 @@ def _build_dispatcher() -> Dispatcher:
             return
         data = await state.get_data()
         chosen: set[str] = set(data.get("types", []))
-        allowed = {"jobs", "internships", "conferences"}
+        allowed = {"jobs", "internships", "conferences", "contests"}
         if text in {"далее", "пропустить"}:
             await state.set_state(UnsubscribeStates.tags)
             await message.answer(
@@ -333,7 +336,7 @@ def _build_dispatcher() -> Dispatcher:
             )
         else:
             await message.answer(
-                "Не понял. Используйте jobs, internships, conferences или «далее»."
+                "Не понял. Используйте jobs, internships, conferences, contests или «далее»."
             )
 
     @router.message(UnsubscribeStates.tags)
@@ -414,6 +417,7 @@ def _build_dispatcher() -> Dispatcher:
                     PublicationType.job: "💼",
                     PublicationType.internship: "🧑‍🎓",
                     PublicationType.conference: "🎤",
+                    PublicationType.contest: "🏆",
                 }.get(p.type, "🔗")
                 deadline = (
                     f"\n🗓 Дедлайн: {p.deadline_at:%d.%m.%Y}"
@@ -442,6 +446,10 @@ def _build_dispatcher() -> Dispatcher:
     async def cmd_conferences(message: types.Message, command: CommandObject) -> None:
         await handle_search(message, PublicationType.conference, split_tokens(command.args or ""))
 
+    @router.message(Command("contests"))
+    async def cmd_contests(message: types.Message, command: CommandObject) -> None:
+        await handle_search(message, PublicationType.contest, split_tokens(command.args or ""))
+
     @router.callback_query(F.data == "cmd:subscribe")
     async def cb_subscribe(callback: types.CallbackQuery, state: FSMContext) -> None:
         await callback.answer()
@@ -449,12 +457,13 @@ def _build_dispatcher() -> Dispatcher:
             await state.set_state(SubscribeStates.choose_types)
             await state.update_data(types=set(), occupation=None, platform=None, extra=[])
             await callback.message.answer(
-                "🔸 Шаг 1/4. Выберите типы публикаций (jobs, internships, conferences).\n"
+                "🔸 Шаг 1/4. Выберите типы публикаций (jobs, internships, conferences, contests).\n"
                 "Отправляйте по одному слову. Когда закончите — напишите «далее». Для отмены — «отмена».",
                 reply_markup=ReplyKeyboardMarkup(
                     keyboard=[
                         [KeyboardButton(text="jobs"), KeyboardButton(text="internships")],
-                        [KeyboardButton(text="conferences"), KeyboardButton(text="далее")],
+                        [KeyboardButton(text="conferences"), KeyboardButton(text="contests")],
+                        [KeyboardButton(text="далее")],
                         [KeyboardButton(text="отмена")],
                     ],
                     resize_keyboard=True,
@@ -486,6 +495,7 @@ def _build_dispatcher() -> Dispatcher:
             "job": PublicationType.job,
             "internship": PublicationType.internship,
             "conference": PublicationType.conference,
+            "contest": PublicationType.contest,
         }
         pub_type = mapping.get(target)
         if pub_type and isinstance(callback.message, types.Message):
@@ -519,6 +529,10 @@ def _build_dispatcher() -> Dispatcher:
     @router.message(F.text.lower().in_({"🎤 конференции", "конференции"}))
     async def btn_conferences(message: types.Message) -> None:
         await handle_search(message, PublicationType.conference, [])
+
+    @router.message(F.text.lower().in_({"🏆 хакатоны", "хакатоны", "контесты", "конкурсы"}))
+    async def btn_contests(message: types.Message) -> None:
+        await handle_search(message, PublicationType.contest, [])
 
     @router.message(F.text.lower().in_({"ℹ️ справка", "справка"}))
     async def btn_help(message: types.Message) -> None:

@@ -11,6 +11,7 @@ export const PUBLICATION_TYPES: PublicationType[] = [
   "job",
   "internship",
   "conference",
+  "contest",
 ]
 
 export const TAG_CATEGORIES: TagCategory[] = [
@@ -30,4 +31,3 @@ export const PARSER_TYPES: ParserType[] = [
 ]
 
 export const PUBLICATION_STATUSES = ["new", "declined", "ready", "sent"]
-

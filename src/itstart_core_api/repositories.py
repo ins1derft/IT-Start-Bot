@@ -36,6 +36,28 @@ class PublicationRepository(BaseRepository):
         result = await self.session.execute(select(Publication).where(Publication.id == pub_id))
         return result.scalar_one_or_none()
 
+    async def exists_duplicate(
+        self,
+        *,
+        url: str,
+        title: str,
+        company: str,
+        vacancy_created_at: datetime.datetime | None = None,
+    ) -> bool:
+        q = select(Publication).where(Publication.url == url)
+        if vacancy_created_at is not None:
+            q = q.union_all(
+                select(Publication).where(
+                    and_(
+                        Publication.title == title,
+                        Publication.company == company,
+                        Publication.vacancy_created_at == vacancy_created_at,
+                    )
+                )
+            )
+        result = await self.session.execute(q.limit(1))
+        return result.scalar_one_or_none() is not None
+
     async def list_recent(self, pub_type: PublicationType, limit: int = 10) -> list[Publication]:
         result = await self.session.execute(
             select(Publication)
@@ -58,6 +80,10 @@ class TagRepository(BaseRepository):
 
     def base_query(self):
         return select(Tag)
+
+    async def get_by_ids(self, ids: Iterable[UUID]) -> list[Tag]:
+        result = await self.session.execute(select(Tag).where(Tag.id.in_(list(ids))))
+        return list(result.scalars())
 
     async def get_by_names(self, names: Iterable[str]) -> list[Tag]:
         result = await self.session.execute(select(Tag).where(Tag.name.in_(list(names))))

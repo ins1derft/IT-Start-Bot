@@ -2,7 +2,7 @@
 
 export type AdminRole = "admin" | "moderator"
 
-export type PublicationType = "job" | "internship" | "conference"
+export type PublicationType = "job" | "internship" | "conference" | "contest"
 
 export type TagCategory =
   | "format"
@@ -73,6 +73,7 @@ export interface PublicationScheduleUpdate {
   job_interval_minutes?: number | null
   internship_interval_minutes?: number | null
   conference_interval_minutes?: number | null
+  contest_interval_minutes?: number | null
 }
 
 export interface TokenResponse {
@@ -109,4 +110,3 @@ export interface HTTPValidationError {
     type: string
   }>
 }
-

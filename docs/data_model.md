@@ -1,7 +1,7 @@
 # Data Model (aligned with DB schema)
 
 ## Enums (факт)
-- `publication_type`: job | internship | conference
+- `publication_type`: job | internship | conference | contest
 - `publication_status`: new | declined | ready | sent
 - `tag_category`: format | occupation | platform | language | location | technology | duration
 - `admin_role`: admin | moderator

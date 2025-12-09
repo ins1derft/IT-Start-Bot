@@ -18,6 +18,7 @@ class PublicationType(StrEnum):
     job = "job"
     internship = "internship"
     conference = "conference"
+    contest = "contest"  # хакатоны/конкурсы
 
 
 class TagCategory(StrEnum):

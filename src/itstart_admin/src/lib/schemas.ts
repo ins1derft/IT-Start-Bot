@@ -83,9 +83,9 @@ export const updateScheduleSchema = z.object({
   job_interval_minutes: z.number().int().min(1).optional().nullable(),
   internship_interval_minutes: z.number().int().min(1).optional().nullable(),
   conference_interval_minutes: z.number().int().min(1).optional().nullable(),
+  contest_interval_minutes: z.number().int().min(1).optional().nullable(),
 })
 
 export const otpCodeSchema = z.object({
   code: z.string().min(6, "Код должен содержать 6 цифр").max(6),
 })
-

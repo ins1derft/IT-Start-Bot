@@ -1,9 +1,10 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { usePublications } from "@/hooks/use-publications"
+import { usePublications, useDeletePublication } from "@/hooks/use-publications"
 import { useApproveAndSend } from "@/hooks/use-publications"
 import { EditPublicationDialog } from "@/components/publications/EditPublicationDialog"
 import { DeclinePublicationDialog } from "@/components/publications/DeclinePublicationDialog"
+import { CreatePublicationDialog } from "@/components/publications/CreatePublicationDialog"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -50,6 +51,7 @@ const typeLabels: Record<PublicationType, string> = {
   job: "Вакансия",
   internship: "Стажировка",
   conference: "Конференция",
+  contest: "Хакатон/конкурс",
 }
 
 export function PublicationsPage() {
@@ -66,9 +68,11 @@ export function PublicationsPage() {
     useState<PublicationRead | null>(null)
   const [approvingPublication, setApprovingPublication] =
     useState<PublicationRead | null>(null)
+  const [creatingOpen, setCreatingOpen] = useState(false)
 
   const { data: publications, isLoading } = usePublications(filters)
   const approveAndSend = useApproveAndSend()
+  const deletePublication = useDeletePublication()
 
   const handleApproveAndSend = async () => {
     if (approvingPublication) {
@@ -81,6 +85,7 @@ export function PublicationsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Публикации</h1>
+        <Button onClick={() => setCreatingOpen(true)}>Новая публикация</Button>
       </div>
 
       {/* Filters */}
@@ -229,6 +234,13 @@ export function PublicationsPage() {
                             <FiCheck className="h-4 w-4" />
                           </Button>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deletePublication.mutate(pub.id)}
+                        >
+                          <FiX className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -261,6 +273,11 @@ export function PublicationsPage() {
           onOpenChange={(open) => !open && setDecliningPublication(null)}
         />
       )}
+
+      <CreatePublicationDialog
+        open={creatingOpen}
+        onOpenChange={setCreatingOpen}
+      />
 
       <AlertDialog
         open={!!approvingPublication}

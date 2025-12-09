@@ -5,6 +5,18 @@ import type {
   PublicationType,
 } from "@/types/api"
 import { useToast } from "@/components/ui/use-toast"
+import { z } from "zod"
+
+const createPublicationSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().min(1),
+  type: z.enum(["job", "internship", "conference", "contest"] as const),
+  company: z.string().min(1),
+  url: z.string().url(),
+  vacancy_created_at: z.string(),
+  deadline_at: z.string().optional().nullable(),
+  contact_info: z.string().optional().nullable(),
+})
 
 interface PublicationsFilters {
   pub_type?: PublicationType | null
@@ -123,6 +135,65 @@ export function useUpdatePublication() {
   })
 }
 
+export function useCreatePublication() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async (data: unknown) => {
+      const payload = createPublicationSchema.parse(data)
+      const response = await api
+        .post("admin/publications", {
+          json: { ...payload, tag_ids: [] },
+        })
+        .json<PublicationRead>()
+      return response
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["publications"] })
+      toast({
+        title: "Публикация создана",
+        description: "Запись успешно добавлена",
+      })
+    },
+    onError: (error: any) => {
+      const isDuplicate = error?.response?.status === 409
+      toast({
+        title: "Ошибка",
+        description: isDuplicate
+          ? "Дубликат: такая ссылка или вакансия уже есть"
+          : error?.message || "Не удалось создать публикацию",
+        variant: "destructive",
+      })
+    },
+  })
+}
+
+export function useDeletePublication() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async (pubId: string) => {
+      await api.delete(`admin/publications/${pubId}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["publications"] })
+      toast({
+        title: "Удалено",
+        description: "Публикация удалена",
+      })
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Ошибка",
+        description: error?.message || "Не удалось удалить публикацию",
+        variant: "destructive",
+      })
+    },
+  })
+}
+
 export function useDeclinePublication() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
@@ -175,4 +246,3 @@ export function useApproveAndSend() {
     },
   })
 }
-

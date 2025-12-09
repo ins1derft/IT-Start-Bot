@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+from uuid import UUID
 from collections.abc import Iterable
 
 import httpx
@@ -82,6 +83,26 @@ async def _eligible_subscriptions(
     return subs
 
 
+async def _send_single_publication(session, settings, pub: Publication) -> None:
+    tags = await _collect_pub_tags(session, pub.id)
+    text = _format_publication(pub, tags, updated=getattr(pub, "is_edited", False))
+
+    if settings.bot_token and settings.bot_channel_id:
+        await _send_telegram_message(settings.bot_token, settings.bot_channel_id, text)
+
+    subs = await _eligible_subscriptions(session, pub)
+    if settings.bot_token:
+        for _sub, user in subs:
+            await _send_telegram_message(settings.bot_token, user.tg_id, text)
+
+    pub.status = "sent"
+    pub.updated_at = datetime.datetime.utcnow()
+
+
+async def send_publication_with_session(session, settings, pub: Publication) -> None:
+    await _send_single_publication(session, settings, pub)
+
+
 async def send_publications() -> None:
     """Send new/ready publications to channel and subscribers, mark as sent."""
     settings = get_settings()
@@ -98,23 +119,24 @@ async def send_publications() -> None:
         pubs = list(res.scalars())
 
         for pub in pubs:
-            tags = await _collect_pub_tags(session, pub.id)
-            text = _format_publication(pub, tags, updated=getattr(pub, "is_edited", False))
-
-            # send to channel if configured
-            if settings.bot_token and settings.bot_channel_id:
-                channel_id = settings.bot_channel_id
-                await _send_telegram_message(settings.bot_token, channel_id, text)
-
-            # send to subscribers
-            subs = await _eligible_subscriptions(session, pub)
-            if settings.bot_token:
-                for _sub, user in subs:
-                    await _send_telegram_message(settings.bot_token, user.tg_id, text)
-
-            pub.status = "sent"
-            pub.updated_at = datetime.datetime.utcnow()
+            await _send_single_publication(session, settings, pub)
         await session.commit()
+
+
+async def send_publication_now(pub_id: UUID) -> bool:
+    """Send a single publication immediately (used by approve-and-send)."""
+    settings = get_settings()
+    engine = build_engine(settings)
+    Session = build_session_maker(engine)
+
+    async with Session() as session:
+        repo = PublicationRepository(session)
+        pub = await repo.get(pub_id)
+        if not pub or pub.is_declined:
+            return False
+        await _send_single_publication(session, settings, pub)
+        await session.commit()
+    return True
 
 
 async def send_deadline_reminders() -> None:

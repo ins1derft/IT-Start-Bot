@@ -31,6 +31,7 @@ const typeLabels: Record<PublicationType, string> = {
   job: "Вакансии",
   internship: "Стажировки",
   conference: "Конференции",
+  contest: "Хакатоны/конкурсы",
 }
 
 export function SchedulePage() {
@@ -43,6 +44,7 @@ export function SchedulePage() {
       job_interval_minutes: null,
       internship_interval_minutes: null,
       conference_interval_minutes: null,
+      contest_interval_minutes: null,
     },
   })
 
@@ -56,11 +58,15 @@ export function SchedulePage() {
       const conferenceSchedule = schedule.find(
         (s) => s.publication_type === "conference"
       )
+      const contestSchedule = schedule.find(
+        (s) => s.publication_type === "contest"
+      )
 
       form.reset({
         job_interval_minutes: jobSchedule?.interval_minutes || null,
         internship_interval_minutes: internshipSchedule?.interval_minutes || null,
         conference_interval_minutes: conferenceSchedule?.interval_minutes || null,
+        contest_interval_minutes: contestSchedule?.interval_minutes || null,
       })
     }
   }, [schedule, form])
@@ -190,6 +196,30 @@ export function SchedulePage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Интервал для конференций (минуты)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        {...field}
+                        value={field.value || ""}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value
+                              ? Number(e.target.value)
+                              : null
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="contest_interval_minutes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Интервал для хакатонов/конкурсов (минуты)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
