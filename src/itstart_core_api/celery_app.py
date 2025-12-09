@@ -41,6 +41,10 @@ def _build_beat_schedule(settings) -> dict[str, Any]:
             "task": "itstart_core_api.tasks.cleanup_old_publications",
             "schedule": crontab(hour=3, minute=0),
         },
+        "run-parsers": {
+            "task": "itstart_core_api.tasks.run_parsers",
+            "schedule": datetime.timedelta(minutes=settings.parsers_poll_interval_minutes),
+        },
     }
 
     try:
@@ -177,3 +181,10 @@ def cleanup_old_publications_task():
     from .tasks import cleanup_old_publications
 
     asyncio.run(cleanup_old_publications())
+
+
+@celery_app.task(name="itstart_core_api.tasks.run_parsers")
+def run_parsers_task():
+    from .tasks import run_parsers
+
+    asyncio.run(run_parsers())

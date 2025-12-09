@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     celery_broker_url: str = Field("redis://localhost:6379/0", validation_alias="CELERY_BROKER_URL")
     celery_result_backend: str | None = Field(None, validation_alias="CELERY_RESULT_BACKEND")
     publication_fallback_interval_minutes: int = 60
+    parsers_poll_interval_minutes: int = 5
+    parsers_workdir: str = "."
     pgp_public_key: str | None = Field(None, validation_alias="PGP_PUBLIC_KEY")
     bot_token: str | None = Field(None, validation_alias="BOT_TOKEN")
     bot_channel_id: str | None = Field(None, validation_alias="BOT_CHANNEL_ID")

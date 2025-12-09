@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import datetime
 
 import sentry_sdk
 import uvicorn
@@ -22,8 +23,9 @@ from .security import hash_password
 from .stats import router as stats_router
 from .tag_seed import TagRepository, seed_tags
 from .tags import router as tags_router
-from .repositories import AdminUserRepository
-from itstart_domain import AdminRole
+from .repositories import AdminUserRepository, ParserRepository
+from .models import Parser
+from itstart_domain import AdminRole, ParserType
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +117,22 @@ async def seed_startup():
                     "Default admin user already exists; skipping creation",
                     extra={"username": settings.admin_default_username},
                 )
+
+        # Seed default T‑Bank parser if missing
+        parser_repo = ParserRepository(session)
+        existing_tbank = await session.execute(
+            parser_repo.base_query().where(Parser.source_name == "tbank")
+        )
+        if existing_tbank.scalar_one_or_none() is None:
+            parser_repo.create(
+                source_name="tbank",
+                executable_file_path="python parsers/tbank_parser.py --output -",
+                type=ParserType.website_parser,
+                parsing_interval=60,
+                parsing_start_time=datetime.datetime.utcnow(),
+                is_active=True,
+            )
+            logger.info("Seeded default tbank parser")
 
         await session.commit()
 

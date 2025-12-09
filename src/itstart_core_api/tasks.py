@@ -19,6 +19,7 @@ from .models import (
     TgUserSubscriptionTag,
 )
 from .repositories import PublicationRepository
+from .parsing_service import run_due_parsers
 
 logger = logging.getLogger(__name__)
 
@@ -181,3 +182,14 @@ async def cleanup_old_publications(days: int = 90) -> None:
     async with Session() as session:
         await session.execute(delete(Publication).where(Publication.created_at < threshold))
         await session.commit()
+
+
+async def run_parsers() -> None:
+    """Entry point for Celery to execute due parsers and store results."""
+
+    settings = get_settings()
+    engine = build_engine(settings)
+    Session = build_session_maker(engine)
+
+    async with Session() as session:
+        await run_due_parsers(session, settings)
