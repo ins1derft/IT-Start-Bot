@@ -97,8 +97,10 @@ class PublicationScheduler(Scheduler):
         static = _build_beat_schedule(get_settings())
         for name, entry in static.items():
             sig = self.app.tasks[entry["task"]].s()
+            # Celery requires the task field to be set; otherwise workers receive task=None
             base_entries[name] = self.Entry(
                 name,
+                task=entry["task"],
                 schedule=entry["schedule"],
                 args=sig.args,
                 kwargs=sig.kwargs,
@@ -112,6 +114,7 @@ class PublicationScheduler(Scheduler):
             sig = self.app.tasks["itstart_core_api.tasks.send_publications"].s()
             base_entries[key] = self.Entry(
                 key,
+                task="itstart_core_api.tasks.send_publications",
                 schedule=datetime.timedelta(minutes=row.interval_minutes),
                 args=sig.args,
                 kwargs=sig.kwargs,

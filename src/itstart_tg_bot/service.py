@@ -85,10 +85,8 @@ async def subscribe_tokens(session, tg_id: int, tokens: Iterable[str]):
     if requires_job_details:
         if TagCategory.occupation not in found_categories:
             raise ValueError("Для вакансий/стажировок укажите сферу деятельности (occupation).")
-        if not ({TagCategory.platform, TagCategory.language} & found_categories):
-            raise ValueError(
-                "Добавьте платформу или язык (platform/language) для вакансий/стажировок."
-            )
+        # Требование платформы/языка убрали, чтобы не блокировать пользователя,
+        # если в словаре тегов нет нужного значения. Теперь это поле опционально.
 
     target_types = pub_types
 

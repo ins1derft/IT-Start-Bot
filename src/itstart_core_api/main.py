@@ -126,7 +126,7 @@ async def seed_startup():
         if existing_tbank.scalar_one_or_none() is None:
             parser_repo.create(
                 source_name="tbank",
-                executable_file_path="python parsers/tbank_parser.py --output -",
+                executable_file_path="python3 parsers/tbank_parser.py --output -",
                 type=ParserType.website_parser,
                 parsing_interval=60,
                 parsing_start_time=datetime.datetime.utcnow(),

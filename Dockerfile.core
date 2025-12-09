@@ -21,7 +21,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY alembic ./alembic
 COPY alembic.ini .
 COPY src ./src
-COPY docs ./docs
+COPY parsers ./parsers
 COPY docker ./docker
 RUN chmod +x docker/entrypoint_core.sh
 EXPOSE 8000

@@ -6,6 +6,7 @@ from uuid import UUID
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.dialects.postgresql import insert
 
 from itstart_domain import AdminRole, ParserType, PublicationType, TagCategory
 
@@ -155,8 +156,15 @@ class UserPreferenceRepository(BaseRepository):
     model = UserPreference
 
     async def add(self, user_id: UUID, tag_ids: Iterable[UUID]) -> None:
-        for tag_id in tag_ids:
-            self.session.add(UserPreference(user_id=user_id, tag_id=tag_id))
+        unique_ids = set(tag_ids)
+        if not unique_ids:
+            return
+        stmt = (
+            insert(UserPreference)
+            .values([{"user_id": user_id, "tag_id": tid} for tid in unique_ids])
+            .on_conflict_do_nothing()
+        )
+        await self.session.execute(stmt)
 
 
 class AdminUserRepository(BaseRepository):
