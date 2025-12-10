@@ -6,7 +6,7 @@ from collections.abc import Iterable
 from uuid import UUID
 
 import redis.asyncio as redis
-from sqlalchemy import delete
+from sqlalchemy import delete, func
 
 from itstart_core_api import models
 from itstart_core_api.repositories import (
@@ -177,13 +177,20 @@ async def search_publications(session, pub_type: PublicationType, tokens: Iterab
         cache_client = None
 
     repo = PublicationRepository(session)
-    q = repo.base_query().where(repo.model.type == pub_type, repo.model.is_declined.is_(False))
+    base_filters = [repo.model.type == pub_type, repo.model.is_declined.is_(False)]
+
+    q = repo.base_query().where(*base_filters)
+
     if tag_ids:
-        q = q.join(
-            models.PublicationTag, models.PublicationTag.publication_id == repo.model.id
-        ).where(models.PublicationTag.tag_id.in_(tag_ids))
-    q = q.order_by(repo.model.created_at.desc()).limit(10)
-    result = await session.execute(q)
+        # Require all specified tags to be present on the publication
+        q = (
+            q.join(models.PublicationTag, models.PublicationTag.publication_id == repo.model.id)
+            .where(models.PublicationTag.tag_id.in_(tag_ids))
+            .group_by(repo.model.id)
+            .having(func.count(func.distinct(models.PublicationTag.tag_id)) == len(tag_ids))
+        )
+
+    result = await session.execute(q.order_by(repo.model.created_at.desc()).limit(10))
     pubs = list(result.scalars())
 
     if cache_client and cache_key:
