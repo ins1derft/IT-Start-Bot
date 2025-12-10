@@ -46,10 +46,11 @@ def _parse_conference_rows(soup: BeautifulSoup) -> List[Dict]:
             url = BASE_URL.rstrip("/") + url
 
         vacancy_created_at = None
+        event_iso = None
         if date_text:
             try:
                 dt = datetime.strptime(f"{date_text} {datetime.now(timezone.utc).year}", "%d %B %Y")
-                vacancy_created_at = dt.replace(tzinfo=timezone.utc).isoformat()
+                event_iso = dt.replace(tzinfo=timezone.utc).isoformat()
             except ValueError:
                 months = {
                     "января": 1,
@@ -70,9 +71,13 @@ def _parse_conference_rows(soup: BeautifulSoup) -> List[Dict]:
                     month = months.get(month_name.lower())
                     if month:
                         dt = datetime(year=datetime.now(timezone.utc).year, month=month, day=int(day))
-                        vacancy_created_at = dt.replace(tzinfo=timezone.utc).isoformat()
+                        event_iso = dt.replace(tzinfo=timezone.utc).isoformat()
                 except Exception:
-                    vacancy_created_at = None
+                    event_iso = None
+
+        # Если удалось вытащить дату конфы, используем её и как дату проведения, и как created_at.
+        vacancy_created_at = event_iso
+        created_at = event_iso or datetime.now(timezone.utc).isoformat()
 
         description = "\n".join([part for part in description_parts if part]).strip() or title
 
@@ -84,7 +89,7 @@ def _parse_conference_rows(soup: BeautifulSoup) -> List[Dict]:
                 "url": url,
                 "type": "conference",
                 "vacancy_created_at": vacancy_created_at,
-                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_at": created_at,
             }
         )
 
