@@ -79,15 +79,6 @@ async def subscribe_tokens(session, tg_id: int, tokens: Iterable[str]):
     if not pub_types:
         raise ValueError("Укажите тип публикаций: jobs, internships или conferences.")
 
-    requires_job_details = any(
-        pt in (PublicationType.job, PublicationType.internship) for pt in pub_types
-    )
-    if requires_job_details:
-        if TagCategory.occupation not in found_categories:
-            raise ValueError("Для вакансий/стажировок укажите сферу деятельности (occupation).")
-        # Требование платформы/языка убрали, чтобы не блокировать пользователя,
-        # если в словаре тегов нет нужного значения. Теперь это поле опционально.
-
     target_types = pub_types
 
     for ptype in target_types:

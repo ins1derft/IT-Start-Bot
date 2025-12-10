@@ -140,6 +140,6 @@ async def test_subscribe_requires_type_and_details():
         with pytest.raises(ValueError):
             await subscribe_tokens(session, tg_id=999, tokens=["python"])
 
-        # Has type but missing platform/language companion for job? language present but platform/occupation? need both
-        with pytest.raises(ValueError):
-            await subscribe_tokens(session, tg_id=999, tokens=["jobs", "python"])
+        # Type provided without occupation — now allowed
+        result = await subscribe_tokens(session, tg_id=999, tokens=["jobs", "python"])
+        assert PublicationType.job in result["types"]
