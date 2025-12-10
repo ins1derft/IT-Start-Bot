@@ -5,10 +5,11 @@ from itstart_domain import TagCategory
 from .repositories import TagRepository
 
 SEED_TAGS = {
+    # keep lowercase to match user input normalization
     TagCategory.format: ["remote", "office", "hybrid"],
     TagCategory.occupation: ["тестировщик", "разработчик", "дизайнер", "аналитик", "devops"],
     TagCategory.platform: ["android", "ios", "windows"],
-    TagCategory.language: ["kotlin", "swift", "js", "csharp"],
+    TagCategory.language: ["python", "kotlin", "swift", "js", "csharp"],
     TagCategory.location: ["moscow", "spb", "remote"],
     TagCategory.technology: ["react", "sentry", "postgresql"],
     TagCategory.duration: ["part-time", "full-time"],
