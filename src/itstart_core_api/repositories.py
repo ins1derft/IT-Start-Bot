@@ -148,8 +148,22 @@ class SubscriptionRepository(BaseRepository):
         return sub
 
     async def add_tags(self, subscription_id: UUID, tag_ids: Iterable[UUID]) -> None:
-        for tag_id in tag_ids:
-            self.session.add(TgUserSubscriptionTag(subscription_id=subscription_id, tag_id=tag_id))
+        unique_ids = set(tag_ids)
+        if not unique_ids:
+            return
+
+        stmt = (
+            insert(TgUserSubscriptionTag)
+            .values(
+                [
+                    {"subscription_id": subscription_id, "tag_id": tag_id}
+                    for tag_id in unique_ids
+                ]
+            )
+            .on_conflict_do_nothing()
+        )
+
+        await self.session.execute(stmt)
 
 
 class UserPreferenceRepository(BaseRepository):
