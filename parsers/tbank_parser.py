@@ -17,8 +17,9 @@ API_LIST_PATH = "/pfpjobs/papi/getVacancies"
 
 class TBankParser:
     """
-    Minimal parser for T‑Bank IT vacancies.
-    Fetches list pages (with simple page param pagination) and drills into each vacancy card.
+    Парсер IT‑вакансий Т‑Банка, адаптированный под логику приложения:
+    - CLI выводит JSON в stdout (или файл по флагу --output)
+    - Поля соответствуют ожиданиям parsing_service (_normalize_item)
     """
 
     def __init__(self, session: Optional[requests.Session] = None, timeout: float = 20.0) -> None:
@@ -36,7 +37,7 @@ class TBankParser:
 
     def _get_html(self, url: str, params: Optional[dict] = None) -> str:
         resp = self.session.get(url, params=params, timeout=self.timeout)
-        # Ensure correct decoding to avoid mojibake in Cyrillic.
+        # Уточняем кодировку, чтобы не получить кракозябры в описании.
         if not resp.encoding or resp.encoding.lower() == "iso-8859-1":
             resp.encoding = resp.apparent_encoding or "utf-8"
         resp.raise_for_status()
@@ -44,8 +45,8 @@ class TBankParser:
 
     def fetch_api_page(self, offset: int = 0, city_id: str = "0c5b2444-70a0-4932-980c-b4dc0d3f02b5") -> Dict:
         """
-        Call internal vacancies API with pagination offset.
-        City filter uses the default "Любой город" cityId provided from DevTools.
+        Вызывает внутренний API вакансий с пагинацией.
+        city_id по умолчанию — «Любой город».
         """
         payload = {
             "filters": {"cityId": [city_id]},
@@ -81,29 +82,62 @@ class TBankParser:
         title_el = soup.select_one("h1") or soup.select_one('[data-qa-type$="title"]')
         title = title_el.get_text(strip=True) if title_el else fallback_title
 
-        # Prefer the "Описание" card container to avoid grabbing other HTML blocks.
+        # Ищем описание, избегая захвата шапки.
         desc_container = None
-        for card in soup.select('div.VacancyDescriptionView__cards-desktop_djsrvZ div[class*="Card__card"]'):
-            title_el = card.select_one("h2")
-            if title_el and "Описание" in title_el.get_text(strip=True):
-                desc_container = card.select_one("div.atom-desktop-dangerously-html__box_aCYBaw")
+        selector_candidates = [
+            '[data-qa-type*="vacancy-description"]',
+            '[data-qa-type*="VacancyDescription"]',
+            '[data-test*="vacancy-description"]',
+            'section[data-qa-type*="description"]',
+            '.VacancyDescriptionView__cards-desktop_djsrvZ .Card__card_aZ3-\\+--E .atom-desktop-dangerously-html__box_aCYBaw',
+            '.VacancyDescriptionView__cards-desktop_djsrvZ .atom-desktop-dangerously-html__box_aCYBaw',
+        ]
+        for selector in selector_candidates:
+            desc_container = soup.select_one(selector)
+            if desc_container:
                 break
+
+        heading_capture: List[str] = []
         if not desc_container:
-            # Fallback: any htmlTag/dangerously-html container.
-            desc_container = soup.select_one('div[data-test*="htmlTag"], div.atom-desktop-dangerously-html__box_aCYBaw')
-        text_parts: List[str] = []
-        if desc_container:
-            paragraphs = desc_container.select("p")
-            for p in paragraphs:
-                text = p.get_text(" ", strip=True)
-                if text:
-                    text_parts.append(text)
-            # Fallback: if no <p>, take full text of the container.
-            if not text_parts:
-                fallback_text = desc_container.get_text(" ", strip=True)
-                if fallback_text:
-                    text_parts.append(fallback_text)
-        description = "\n\n".join(text_parts)
+            heading_tags = ["h2", "h3", "h4", "h5"]
+            keywords = ("опис", "ваканси")
+            for heading in soup.find_all(heading_tags):
+                heading_text = heading.get_text(" ", strip=True).lower()
+                if any(k in heading_text for k in keywords):
+                    for node in heading.next_elements:
+                        if getattr(node, "name", None) in heading_tags:
+                            break
+                        if getattr(node, "name", None) in ["p", "li"]:
+                            text = node.get_text(" ", strip=True)
+                            if text:
+                                heading_capture.append(text)
+                        if getattr(node, "name", None) in ["div", "section", "article"]:
+                            block_text = node.get_text(" ", strip=True)
+                            if block_text:
+                                heading_capture.append(block_text)
+                    break
+        if heading_capture and not desc_container:
+            description = "\n\n".join(heading_capture)
+        else:
+            description = ""
+
+        if not heading_capture:
+            if not desc_container:
+                desc_container = soup.select_one('div[data-test*="htmlTag"], div.atom-desktop-dangerously-html__box_aCYBaw')
+
+            text_parts: List[str] = []
+            if desc_container:
+                paragraphs = desc_container.select("p, li")
+                for p in paragraphs:
+                    text = p.get_text(" ", strip=True)
+                    if text:
+                        text_parts.append(text)
+                if not text_parts:
+                    fallback_text = desc_container.get_text(" ", strip=True)
+                    if fallback_text:
+                        text_parts.append(fallback_text)
+            description = description or "\n\n".join(text_parts)
+
         if not description and fallback_desc_html:
             description = self._html_to_text(fallback_desc_html)
 
@@ -117,6 +151,31 @@ class TBankParser:
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
 
+    def _extract_urls_from_list_page(self, html: str) -> Dict[str, str]:
+        """
+        Извлекает полные URL вакансий из HTML страницы со списком.
+        Возвращает словарь {slug: full_url} для сопоставления.
+        """
+        soup = BeautifulSoup(html, "html.parser")
+        url_map = {}
+        vacancy_links = soup.select('a[href*="/career/it/"]')
+
+        for link in vacancy_links:
+            href = link.get("href", "")
+            if "/career/it/" in href and href.count("/") >= 4:
+                parts = href.rstrip("/").split("/")
+                if len(parts) >= 2:
+                    slug = parts[-1]
+                    if href.startswith("/"):
+                        full_url = urljoin(BASE_URL, href)
+                    elif href.startswith("http"):
+                        full_url = href
+                    else:
+                        full_url = urljoin(BASE_URL, f"/{href}")
+                    url_map[slug] = full_url
+
+        return url_map
+
     def scrape_all(self, max_pages: int = 50) -> List[Dict[str, Optional[str]]]:
         results: List[Dict[str, Optional[str]]] = []
         seen: Set[str] = set()
@@ -129,11 +188,34 @@ class TBankParser:
             if not vacancies:
                 break
 
+            list_url = urljoin(BASE_URL, LIST_PATH)
+            if offset == 0:
+                try:
+                    list_html = self._get_html(list_url)
+                    url_map = self._extract_urls_from_list_page(list_html)
+                except Exception:
+                    url_map = {}
+            else:
+                url_map = {}
+
             for vac in vacancies:
                 slug = vac.get("urlSlug")
                 if not slug:
                     continue
-                url = urljoin(BASE_URL, f"/career/it/{slug}")
+
+                url = url_map.get(slug)
+                if not url:
+                    specialty = vac.get("specialty", "")
+                    if isinstance(specialty, str) and specialty:
+                        url = urljoin(BASE_URL, f"/career/it/{specialty}/{slug}")
+                    else:
+                        if slug.startswith("/career/"):
+                            url = urljoin(BASE_URL, slug)
+                        elif slug.startswith("career/"):
+                            url = urljoin(BASE_URL, f"/{slug}")
+                        else:
+                            url = urljoin(BASE_URL, f"/career/it/{slug}")
+
                 if url in seen:
                     continue
                 try:
@@ -143,7 +225,23 @@ class TBankParser:
                         fallback_desc_html=vac.get("shortDescription", ""),
                     )
                 except requests.HTTPError:
-                    # Skip broken detail pages but continue pagination.
+                    if not url_map.get(slug):
+                        try:
+                            resp = self.session.head(url, allow_redirects=True, timeout=self.timeout)
+                            if resp.status_code == 200:
+                                url = resp.url
+                                detail = self.fetch_detail(
+                                    url,
+                                    fallback_title=vac.get("title", ""),
+                                    fallback_desc_html=vac.get("shortDescription", ""),
+                                )
+                            else:
+                                continue
+                        except Exception:
+                            continue
+                    else:
+                        continue
+                except Exception:
                     continue
                 results.append(detail)
                 seen.add(url)
@@ -164,31 +262,33 @@ def save_vacancies_to_file(
     max_pages: int = 50,
 ) -> str:
     """
-    Scrape all vacancies and persist them to JSON file.
-    Returns the path to the created file so caller can use it downstream.
+    Скрапит вакансии и сохраняет JSON. Возвращает путь к файлу.
     """
     parser = parser or TBankParser()
     vacancies = parser.scrape_all(max_pages=max_pages)
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w", encoding="utf-8") as f:
+    out_path = Path(output_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("w", encoding="utf-8") as f:
         json.dump(vacancies, f, ensure_ascii=False, indent=2)
-    return output_path
+    return str(out_path)
 
 
 def main() -> None:
-    """CLI entrypoint.
-
-    By default prints JSON to stdout; use -o/--output to write a file and echo its path.
-    """
+    """CLI совместим с текущим раннером (python3 parsers/tbank_parser.py --output -)."""
 
     argp = argparse.ArgumentParser(description="Scrape T-Bank IT vacancies")
     argp.add_argument(
         "-o",
         "--output",
         default="-",
-        help="Path to write JSON; '-' or /dev/stdout prints to stdout",
+        help="Path to write JSON; '-' или /dev/stdout печатает в stdout",
     )
-    argp.add_argument("--max-pages", type=int, default=50, help="Pagination pages to fetch")
+    argp.add_argument(
+        "--max-pages",
+        type=int,
+        default=50,
+        help="Сколько страниц пагинации дергать",
+    )
     args = argp.parse_args()
 
     parser = TBankParser()
@@ -203,4 +303,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
