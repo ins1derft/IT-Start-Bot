@@ -107,8 +107,10 @@ export function useUpdatePublication() {
       if (params.contact_info !== undefined) {
         searchParams.set("contact_info", params.contact_info || "")
       }
-      if (params.deadline_at !== undefined) {
-        searchParams.set("deadline_at", params.deadline_at || "")
+      // deadline_at должен быть валидной датой/датой-временем; пустая строка ломает бэкенд-валидацию.
+      // Поэтому передаём только когда есть значение.
+      if (params.deadline_at) {
+        searchParams.set("deadline_at", params.deadline_at)
       }
 
       const response = await api
