@@ -30,6 +30,16 @@ class BaseRepository:
         self.session = session
 
 
+def _to_utc_naive(dt: datetime.datetime | None) -> datetime.datetime | None:
+    """Ensure datetime is naive in UTC for TIMESTAMP WITHOUT TIME ZONE columns."""
+
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt
+    return dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+
+
 class PublicationRepository(BaseRepository):
     model = Publication
 
@@ -47,12 +57,13 @@ class PublicationRepository(BaseRepository):
     ) -> bool:
         q = select(Publication).where(Publication.url == url)
         if vacancy_created_at is not None:
+            vacancy_dt = _to_utc_naive(vacancy_created_at)
             q = q.union_all(
                 select(Publication).where(
                     and_(
                         Publication.title == title,
                         Publication.company == company,
-                        Publication.vacancy_created_at == vacancy_created_at,
+                        Publication.vacancy_created_at == vacancy_dt,
                     )
                 )
             )
