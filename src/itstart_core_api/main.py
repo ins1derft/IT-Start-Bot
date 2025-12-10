@@ -149,6 +149,36 @@ async def seed_startup():
             )
             logger.info("Seeded default vk parser")
 
+        # Seed default Nastachku parser if missing
+        existing_nastachku = await session.execute(
+            parser_repo.base_query().where(Parser.source_name == "nastachku")
+        )
+        if existing_nastachku.scalar_one_or_none() is None:
+            parser_repo.create(
+                source_name="nastachku",
+                executable_file_path="python3 parsers/nastachku_parser.py --output -",
+                type=ParserType.website_parser,
+                parsing_interval=720,
+                parsing_start_time=datetime.datetime.utcnow(),
+                is_active=True,
+            )
+            logger.info("Seeded default nastachku parser")
+
+        # Seed default Podlodka parser if missing
+        existing_podlodka = await session.execute(
+            parser_repo.base_query().where(Parser.source_name == "podlodka")
+        )
+        if existing_podlodka.scalar_one_or_none() is None:
+            parser_repo.create(
+                source_name="podlodka",
+                executable_file_path="python3 parsers/podlodka_parser.py --output -",
+                type=ParserType.website_parser,
+                parsing_interval=720,
+                parsing_start_time=datetime.datetime.utcnow(),
+                is_active=True,
+            )
+            logger.info("Seeded default podlodka parser")
+
         await session.commit()
 
 
