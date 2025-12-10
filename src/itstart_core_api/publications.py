@@ -21,6 +21,20 @@ from .tasks import send_publication_with_session
 router = APIRouter(prefix="/admin/publications", tags=["publications"])
 
 
+def _to_utc_naive(dt: datetime.datetime | None) -> datetime.datetime | None:
+    """Convert aware datetime to UTC naive to match DB columns.
+
+    All datetime columns are stored as ``TIMESTAMP WITHOUT TIME ZONE`` in the DB,
+    so we strip tzinfo after shifting to UTC. Naive values are returned unchanged.
+    """
+
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt
+    return dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+
+
 def _to_pub_read(pub) -> PublicationRead:
     tags = []
     if hasattr(pub, "__dict__") and "tags" in pub.__dict__:
@@ -58,11 +72,14 @@ async def create_publication(
     audit = AdminAuditRepository(session)
     tag_repo = TagRepository(session)
 
+    vacancy_dt = _to_utc_naive(payload.vacancy_created_at)
+    deadline_dt = _to_utc_naive(payload.deadline_at)
+
     if await repo.exists_duplicate(
         url=payload.url,
         title=payload.title,
         company=payload.company,
-        vacancy_created_at=payload.vacancy_created_at,
+        vacancy_created_at=vacancy_dt,
     ):
         raise HTTPException(status_code=409, detail="Duplicate publication")
 
@@ -73,10 +90,10 @@ async def create_publication(
         company=payload.company,
         url=payload.url,
         created_at=datetime.datetime.utcnow(),
-        vacancy_created_at=payload.vacancy_created_at,
+        vacancy_created_at=vacancy_dt,
         status="new",
         is_declined=False,
-        deadline_at=payload.deadline_at,
+        deadline_at=deadline_dt,
         contact_info=payload.contact_info,
     )
 
@@ -198,7 +215,7 @@ async def update_publication(
         pub.contact_info = contact_info
         pub.contact_info_encrypted = encrypt_contact_info(contact_info, settings.pgp_public_key)
     if deadline_at is not None:
-        pub.deadline_at = deadline_at
+        pub.deadline_at = _to_utc_naive(deadline_at)
     pub.is_edited = True
     pub.updated_at = datetime.datetime.utcnow()
     pub.editor_id = current.id
