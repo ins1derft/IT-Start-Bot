@@ -12,6 +12,7 @@ import type {
   ChangePasswordRequest,
   TOTPSetupResponse,
   OTPCode,
+  AdminUserRead,
 } from "@/types/api"
 import { useToast } from "@/components/ui/use-toast"
 
@@ -27,9 +28,22 @@ export function useLogin() {
         .json<TokenResponse>()
       return response
     },
-    onSuccess: (data, variables) => {
+    onSuccess: async (data) => {
       setTokens(data)
-      setUser({ username: variables.username, role: "admin" }) // Will be updated from actual user data
+
+      try {
+        const me = await api.get("auth/me").json<AdminUserRead>()
+        setUser({ username: me.username, role: me.role })
+      } catch (error) {
+        clearTokens()
+        toast({
+          title: "Ошибка",
+          description: "Не удалось получить данные пользователя после входа",
+          variant: "destructive",
+        })
+        return
+      }
+
       queryClient.invalidateQueries()
       navigate("/")
       toast({

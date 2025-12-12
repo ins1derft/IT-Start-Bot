@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -10,10 +11,16 @@ from itstart_domain import AdminRole
 from .auth import get_current_admin
 from .dependencies import get_db_session
 from .repositories import AdminAuditRepository, AdminUserRepository
-from .schemas import AdminUserRead
+from .schemas import AdminUserCreateResponse, AdminUserRead
 from .security import hash_password
 
 router = APIRouter(prefix="/admin/users", tags=["admin-users"])
+
+_TEMP_PASSWORD_BYTES = 9  # ~12 chars in token_urlsafe, >=8 symbols
+
+
+def _generate_temporary_password() -> str:
+    return secrets.token_urlsafe(_TEMP_PASSWORD_BYTES)
 
 
 @router.get("", response_model=list[AdminUserRead])
@@ -29,10 +36,9 @@ async def list_users(
     return list(result.scalars())
 
 
-@router.post("", response_model=AdminUserRead, status_code=201)
+@router.post("", response_model=AdminUserCreateResponse, status_code=201)
 async def create_user(
     username: str,
-    password: str,
     role: AdminRole,
     session: AsyncSession = Depends(get_db_session),
     current=Depends(get_current_admin),
@@ -44,7 +50,8 @@ async def create_user(
     exists = await repo.get_by_username(username)
     if exists:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username exists")
-    user = repo.create(username=username, password_hash=hash_password(password), role=role)
+    temp_password = _generate_temporary_password()
+    user = repo.create(username=username, password_hash=hash_password(temp_password), role=role)
     await session.commit()
     await session.refresh(user)
     audit.log(
@@ -55,7 +62,7 @@ async def create_user(
         details=f"role={role}",
     )
     await session.commit()
-    return user
+    return {"user": user, "temporary_password": temp_password}
 
 
 @router.patch("/{user_id}", response_model=AdminUserRead)

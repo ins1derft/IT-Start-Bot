@@ -16,6 +16,7 @@ from .config import Settings, get_settings
 from .dependencies import get_db_session
 from .rate_limiter import InMemoryRateLimiter, RedisRateLimiter
 from .repositories import AdminUserRepository
+from .schemas import AdminUserRead
 from .security import hash_password, verify_password
 
 http_bearer = HTTPBearer(auto_error=False)
@@ -143,6 +144,11 @@ async def refresh_token(
     return TokenResponse(
         access_token=access, refresh_token=refresh, expires_in=settings.access_token_ttl_sec
     )
+
+
+@router.get("/me", response_model=AdminUserRead)
+async def me(current=Depends(get_current_admin)):
+    return current
 
 
 class ChangePasswordRequest(BaseModel):

@@ -62,9 +62,14 @@ async def test_admin_user_creation_and_list(monkeypatch):
     resp = client.post(
         "/admin/users",
         headers=headers,
-        params={"username": "newuser", "password": "pass", "role": "moderator"},
+        params={"username": "newuser", "role": "moderator"},
     )
     assert resp.status_code == 201, resp.text
+    created = resp.json()
+    assert created["user"]["username"] == "newuser"
+    assert created["user"]["role"] == "moderator"
+    assert isinstance(created["temporary_password"], str)
+    assert len(created["temporary_password"]) >= 8
 
     resp = client.get("/admin/users", headers=headers)
     assert resp.status_code == 200

@@ -116,3 +116,8 @@ class AdminUserRead(Model):
     role: AdminRole
     is_active: bool
     created_at: datetime
+
+
+class AdminUserCreateResponse(BaseModel):
+    user: AdminUserRead
+    temporary_password: str

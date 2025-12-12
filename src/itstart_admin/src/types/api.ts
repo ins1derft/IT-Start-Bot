@@ -23,6 +23,11 @@ export interface AdminUserRead {
   created_at: string
 }
 
+export interface AdminUserCreateResponse {
+  user: AdminUserRead
+  temporary_password: string
+}
+
 export interface TagRead {
   id: string
   name: string

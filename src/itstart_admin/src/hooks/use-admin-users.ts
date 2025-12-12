@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import api from "@/lib/api"
-import type { AdminUserRead, AdminRole } from "@/types/api"
+import type { AdminUserRead, AdminRole, AdminUserCreateResponse } from "@/types/api"
 import { useToast } from "@/components/ui/use-toast"
 
 export function useUsers() {
@@ -20,21 +20,20 @@ export function useCreateUser() {
   return useMutation({
     mutationFn: async (data: {
       username: string
-      password: string
       role: AdminRole
     }) => {
       const response = await api
         .post("admin/users", {
           searchParams: data,
         })
-        .json<AdminUserRead>()
+        .json<AdminUserCreateResponse>()
       return response
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] })
       toast({
         title: "Пользователь создан",
-        description: "Пользователь успешно создан",
+        description: "Временный пароль показан в окне создания",
       })
     },
     onError: (error: any) => {
@@ -118,4 +117,3 @@ export function useDisableUser() {
     },
   })
 }
-
