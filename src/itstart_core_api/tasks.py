@@ -8,6 +8,8 @@ from collections.abc import Iterable
 import httpx
 from sqlalchemy import and_, delete, select
 
+from itstart_domain import PublicationType
+
 from .config import get_settings
 from .db import build_engine, build_session_maker
 from .models import (
@@ -104,19 +106,36 @@ async def send_publication_with_session(session, settings, pub: Publication) -> 
     await _send_single_publication(session, settings, pub)
 
 
-async def send_publications() -> None:
-    """Send new/ready publications to channel and subscribers, mark as sent."""
+def _parse_publication_type(value: PublicationType | str | None) -> PublicationType | None:
+    if value is None:
+        return None
+    if isinstance(value, PublicationType):
+        return value
+    try:
+        return PublicationType(value)
+    except ValueError:
+        raise ValueError(f"Unknown publication_type: {value}")
+
+
+async def send_publications(publication_type: PublicationType | str | None = None) -> None:
+    """Send new/ready publications to channel and subscribers, mark as sent.
+
+    If `publication_type` is provided, sends only that type (used by per-type schedules).
+    """
     settings = get_settings()
     engine = build_engine(settings)
     Session = build_session_maker(engine)
 
     async with Session() as session:
         repo = PublicationRepository(session)
-        res = await session.execute(
-            repo.base_query().where(
-                and_(Publication.status.in_(["new", "ready"]), Publication.is_declined.is_(False)),
-            )
+        q = repo.base_query().where(
+            and_(Publication.status.in_(["new", "ready"]), Publication.is_declined.is_(False)),
         )
+        pub_type = _parse_publication_type(publication_type)
+        if pub_type is not None:
+            q = q.where(Publication.type == pub_type)
+
+        res = await session.execute(q)
         pubs = list(res.scalars())
 
         for pub in pubs:

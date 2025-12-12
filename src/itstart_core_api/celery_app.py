@@ -59,6 +59,7 @@ def _build_beat_schedule(settings) -> dict[str, Any]:
             schedule[key] = {
                 "task": "itstart_core_api.tasks.send_publications",
                 "schedule": datetime.timedelta(minutes=row.interval_minutes),
+                "kwargs": {"publication_type": getattr(row.publication_type, "value", row.publication_type)},
             }
     else:
         schedule["send-publications-default"] = {
@@ -96,7 +97,10 @@ class PublicationScheduler(Scheduler):
         # static tasks
         static = _build_beat_schedule(get_settings())
         for name, entry in static.items():
-            sig = self.app.tasks[entry["task"]].s()
+            sig = self.app.tasks[entry["task"]].s(
+                *(entry.get("args") or []),
+                **(entry.get("kwargs") or {}),
+            )
             # Celery requires the task field to be set; otherwise workers receive task=None
             base_entries[name] = self.Entry(
                 name,
@@ -111,7 +115,9 @@ class PublicationScheduler(Scheduler):
         # dynamic publication send tasks
         for row in schedules:
             key = f"send-publications-{getattr(row.publication_type, 'value', row.publication_type)}"
-            sig = self.app.tasks["itstart_core_api.tasks.send_publications"].s()
+            sig = self.app.tasks["itstart_core_api.tasks.send_publications"].s(
+                publication_type=getattr(row.publication_type, "value", row.publication_type)
+            )
             base_entries[key] = self.Entry(
                 key,
                 task="itstart_core_api.tasks.send_publications",
@@ -166,10 +172,10 @@ celery_app = make_celery()
 
 
 @celery_app.task(name="itstart_core_api.tasks.send_publications")
-def send_publications_task():
+def send_publications_task(publication_type: str | None = None):
     from .tasks import send_publications
 
-    asyncio.run(send_publications())
+    asyncio.run(send_publications(publication_type=publication_type))
 
 
 @celery_app.task(name="itstart_core_api.tasks.send_deadline_reminders")

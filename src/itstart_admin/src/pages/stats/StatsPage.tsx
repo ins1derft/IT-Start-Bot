@@ -27,6 +27,12 @@ export function StatsPage() {
   const { data: publicationsPerDay, isLoading: publicationsLoading } =
     usePublicationsPerDay(filters)
 
+  const users = usersStats as any
+  const subscribed = users?.subscribed ?? 0
+  const unsubscribed = users?.unsubscribed ?? 0
+  const delta = users?.delta ?? subscribed - unsubscribed
+  const activeUsers = users?.active_users ?? 0
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -69,27 +75,19 @@ export function StatsPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">Подписки</p>
-                <p className="text-2xl font-bold">
-                  {usersStats.subscribed || 0}
-                </p>
+                <p className="text-2xl font-bold">{subscribed}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Отписки</p>
-                <p className="text-2xl font-bold">
-                  {usersStats.unsubscribed || 0}
-                </p>
+                <p className="text-2xl font-bold">{unsubscribed}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Разница</p>
-                <p className="text-2xl font-bold">
-                  {(usersStats.subscribed || 0) - (usersStats.unsubscribed || 0)}
-                </p>
+                <p className="text-2xl font-bold">{delta}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Активные</p>
-                <p className="text-2xl font-bold">
-                  {usersStats.active || 0}
-                </p>
+                <p className="text-2xl font-bold">{activeUsers}</p>
               </div>
             </div>
           ) : (
@@ -134,14 +132,58 @@ export function StatsPage() {
         <CardContent>
           {parsersLoading ? (
             <Skeleton className="h-24 w-full" />
+          ) : parsersError && Array.isArray(parsersError) ? (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Среднее (взвешенное)</p>
+                <p className="text-3xl font-bold">
+                  {(() => {
+                    const totalRuns = parsersError.reduce(
+                      (acc: number, item: any) => acc + (item.total || 0),
+                      0
+                    )
+                    if (!totalRuns) return "0.00%"
+                    const weighted = parsersError.reduce(
+                      (acc: number, item: any) =>
+                        acc + (item.error_percent || 0) * (item.total || 0),
+                      0
+                    )
+                    return `${(weighted / totalRuns).toFixed(2)}%`
+                  })()}
+                </p>
+              </div>
+
+              {parsersError.length > 0 ? (
+                <div className="space-y-2">
+                  {parsersError.map((item: any, index: number) => (
+                    <div
+                      key={item.parser_id || index}
+                      className="flex items-center justify-between p-2 border rounded"
+                    >
+                      <span className="font-mono text-sm">
+                        {item.parser_id || `parser-${index + 1}`}
+                      </span>
+                      <span className="font-semibold">
+                        {(item.error_percent || 0).toFixed(2)}%{" "}
+                        <span className="text-muted-foreground font-normal">
+                          ({item.total || 0})
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p>Нет данных</p>
+              )}
+            </div>
           ) : parsersError ? (
             <div>
               <p className="text-3xl font-bold">
                 {typeof parsersError === "number"
                   ? `${parsersError.toFixed(2)}%`
-                  : parsersError.error_percent
-                  ? `${parsersError.error_percent.toFixed(2)}%`
-                  : "0%"}
+                  : (parsersError as any).error_percent
+                  ? `${(parsersError as any).error_percent.toFixed(2)}%`
+                  : "0.00%"}
               </p>
             </div>
           ) : (
