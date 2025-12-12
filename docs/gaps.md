@@ -43,23 +43,20 @@ HEAD: **558fa85** (см. `git log -n 1`)
   - Tests: `tests/test_healthz.py:7`
   - Code: `src/itstart_core_api/api.py:11`
 
-- [ ] **GAP-006 🟨 Frontend статистики не соответствует backend контракту**:
-  - UI читает `usersStats.active`, а API возвращает `active_users`.
-    - UI: `src/itstart_admin/src/pages/stats/StatsPage.tsx:89`
-    - API: `src/itstart_core_api/stats.py:58`
-  - UI ожидает “процент ошибок парсеров” как число/объект, но API возвращает список по `parser_id`.
-    - UI: `src/itstart_admin/src/pages/stats/StatsPage.tsx:129`
-    - API: `src/itstart_core_api/stats.py:86`
+- [x] **GAP-006 ✅ Frontend статистики соответствует backend контракту**:
+  - UI использует `active_users/delta` из API и корректно отображает “ошибки парсеров” как список по `parser_id`.
+    - UI: `src/itstart_admin/src/pages/stats/StatsPage.tsx:34`, `src/itstart_admin/src/pages/stats/StatsPage.tsx:135`
+    - API: `src/itstart_core_api/stats.py:58`, `src/itstart_core_api/stats.py:86`
 
-- [ ] **GAP-007 🟨 “Расписание рассылки по типам” сейчас логически не работает**: UI/API позволяют выставлять интервалы по `publication_type`, но Celery-задача отправляет публикации всех типов разом.
+- [x] **GAP-007 ✅ “Расписание рассылки по типам” работает**: Celery-задачи передают `publication_type`, а рассылка фильтрует публикации по типу.
   - Docs: `docs/roadmap.md:71` (рассылки по `publication_schedule`)
-  - Code (планирование задач по типам): `src/itstart_core_api/celery_app.py:56`
-  - Code (реальная отправка без фильтра типа): `src/itstart_core_api/tasks.py:107`
+  - Code (планирование задач по типам): `src/itstart_core_api/celery_app.py:58`, `src/itstart_core_api/celery_app.py:175`
+  - Code (фильтрация по типу): `src/itstart_core_api/tasks.py:120`, `src/itstart_core_api/tasks.py:134`
 
-- [ ] **GAP-008 🟨 “Покрытие ≥80%” заявлено как выполненное, но CI падает и локальный прогон ниже порога**:
+- [x] **GAP-008 ✅ “Покрытие ≥80%” выполняется**:
   - Docs: `docs/todo.md:15`
   - CI: `.github/workflows/ci.yml:34` (`--cov-fail-under=80`)
-  - Факт: текущий локальный прогон `pytest` дал Total ~78% (см. `coverage.xml:1`)
+  - Факт: текущий локальный прогон `pytest` даёт Total **80%** (см. `coverage.xml:1`)
 
 ---
 
