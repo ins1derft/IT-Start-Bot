@@ -9,6 +9,8 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
+from sentry_service import get_service_logger, init_sentry
+
 
 BASE_URL = "https://www.tbank.ru"
 LIST_PATH = "/career/vacancies/it/"
@@ -25,6 +27,7 @@ class TBankParser:
     def __init__(self, session: Optional[requests.Session] = None, timeout: float = 20.0) -> None:
         self.session = session or requests.Session()
         self.timeout = timeout
+        self.logger = get_service_logger("tbank_parser")
         self.session.headers.update(
             {
                 "User-Agent": (
@@ -36,12 +39,16 @@ class TBankParser:
         )
 
     def _get_html(self, url: str, params: Optional[dict] = None) -> str:
-        resp = self.session.get(url, params=params, timeout=self.timeout)
-        # Уточняем кодировку, чтобы не получить кракозябры в описании.
-        if not resp.encoding or resp.encoding.lower() == "iso-8859-1":
-            resp.encoding = resp.apparent_encoding or "utf-8"
-        resp.raise_for_status()
-        return resp.text
+        try:
+            resp = self.session.get(url, params=params, timeout=self.timeout)
+            # Уточняем кодировку, чтобы не получить кракозябры в описании.
+            if not resp.encoding or resp.encoding.lower() == "iso-8859-1":
+                resp.encoding = resp.apparent_encoding or "utf-8"
+            resp.raise_for_status()
+            return resp.text
+        except Exception:
+            self.logger.exception("Failed to GET %s params=%s", url, params)
+            raise
 
     def fetch_api_page(self, offset: int = 0, city_id: str = "0c5b2444-70a0-4932-980c-b4dc0d3f02b5") -> Dict:
         """
@@ -52,15 +59,19 @@ class TBankParser:
             "filters": {"cityId": [city_id]},
             "pagination": {"it": {"offset": offset, "isFinished": False}},
         }
-        resp = self.session.post(
-            urljoin(BASE_URL, API_LIST_PATH),
-            json=payload,
-            timeout=self.timeout,
-        )
-        if not resp.encoding or resp.encoding.lower() == "iso-8859-1":
-            resp.encoding = resp.apparent_encoding or "utf-8"
-        resp.raise_for_status()
-        return resp.json()
+        try:
+            resp = self.session.post(
+                urljoin(BASE_URL, API_LIST_PATH),
+                json=payload,
+                timeout=self.timeout,
+            )
+            if not resp.encoding or resp.encoding.lower() == "iso-8859-1":
+                resp.encoding = resp.apparent_encoding or "utf-8"
+            resp.raise_for_status()
+            return resp.json()
+        except Exception:
+            self.logger.exception("Failed to POST vacancies API offset=%s city_id=%s", offset, city_id)
+            raise
 
     def _html_to_text(self, html: str) -> str:
         soup = BeautifulSoup(html or "", "html.parser")
@@ -236,12 +247,16 @@ class TBankParser:
                                     fallback_desc_html=vac.get("shortDescription", ""),
                                 )
                             else:
+                                self.logger.warning("Vacancy detail returned status=%s url=%s", resp.status_code, url)
                                 continue
                         except Exception:
+                            self.logger.exception("Vacancy detail fetch failed (after redirect probe) url=%s", url)
                             continue
                     else:
+                        self.logger.warning("Vacancy detail fetch failed (HTTPError) url=%s", url)
                         continue
                 except Exception:
+                    self.logger.exception("Vacancy detail parse failed url=%s", url)
                     continue
                 results.append(detail)
                 seen.add(url)
@@ -275,6 +290,8 @@ def save_vacancies_to_file(
 
 def main() -> None:
     """CLI совместим с текущим раннером (python3 parsers/tbank_parser.py --output -)."""
+
+    init_sentry("tbank_parser")
 
     argp = argparse.ArgumentParser(description="Scrape T-Bank IT vacancies")
     argp.add_argument(

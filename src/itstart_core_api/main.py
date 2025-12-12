@@ -179,6 +179,21 @@ async def seed_startup():
             )
             logger.info("Seeded default podlodka parser")
 
+        # Seed default internships parser if missing
+        existing_internships = await session.execute(
+            parser_repo.base_query().where(Parser.source_name == "internships")
+        )
+        if existing_internships.scalar_one_or_none() is None:
+            parser_repo.create(
+                source_name="internships",
+                executable_file_path="python3 parsers/internships_parser.py --output -",
+                type=ParserType.api_client,
+                parsing_interval=720,
+                parsing_start_time=datetime.datetime.utcnow(),
+                is_active=True,
+            )
+            logger.info("Seeded default internships parser")
+
         await session.commit()
 
 

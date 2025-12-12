@@ -9,6 +9,8 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
+from sentry_service import get_service_logger, init_sentry
+
 BASE_URL = "https://team.vk.company"
 LIST_PATH = "/vacancy/"
 
@@ -44,6 +46,7 @@ class VKParser:
     def __init__(self, session: Optional[requests.Session] = None, timeout: float = 15.0) -> None:
         self.session = session or requests.Session()
         self.timeout = timeout
+        self.logger = get_service_logger("vk_parser")
         self.session.headers.update(
             {
                 "User-Agent": (
@@ -55,11 +58,15 @@ class VKParser:
         )
 
     def _get_html(self, url: str, params: Optional[dict] = None) -> str:
-        resp = self.session.get(url, params=params, timeout=self.timeout)
-        if not resp.encoding or resp.encoding.lower() == "iso-8859-1":
-            resp.encoding = resp.apparent_encoding or "utf-8"
-        resp.raise_for_status()
-        return resp.text
+        try:
+            resp = self.session.get(url, params=params, timeout=self.timeout)
+            if not resp.encoding or resp.encoding.lower() == "iso-8859-1":
+                resp.encoding = resp.apparent_encoding or "utf-8"
+            resp.raise_for_status()
+            return resp.text
+        except Exception:
+            self.logger.exception("Failed to GET %s params=%s", url, params)
+            raise
 
     def _html_to_text(self, html: str) -> str:
         soup = BeautifulSoup(html or "", "html.parser")
@@ -161,6 +168,7 @@ class VKParser:
                         seen.add(vac["url"])
                         new_cards += 1
                     except Exception:
+                        self.logger.exception("Failed to parse vacancy detail url=%s", vac.get("url"))
                         continue
                 if new_cards == 0:
                     break
@@ -185,6 +193,8 @@ def save_vacancies_to_file(
 
 
 def main() -> None:
+    init_sentry("vk_parser")
+
     argp = argparse.ArgumentParser(description="Scrape VK vacancies (team.vk.company)")
     argp.add_argument(
         "-o",

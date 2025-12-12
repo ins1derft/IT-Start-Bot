@@ -12,6 +12,7 @@ coverage.xml
 .vscode/
 dist/
 build/
+parsers/logs/
 
 # Environment / local overrides
 .env

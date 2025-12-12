@@ -1,6 +1,5 @@
 import argparse
 import json
-import logging
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -9,9 +8,11 @@ from typing import Dict, List, Optional
 import requests
 from bs4 import BeautifulSoup
 
+from sentry_service import get_service_logger, init_sentry
+
 BASE_URL = "https://podlodka.io/crew"
 
-logger = logging.getLogger(__name__)
+logger = get_service_logger("podlodka_parser")
 
 
 def _parse_conference_rows(soup: BeautifulSoup) -> List[Dict]:
@@ -97,11 +98,15 @@ def _parse_conference_rows(soup: BeautifulSoup) -> List[Dict]:
 
 
 def _get_html(url: str, session: requests.Session, timeout: float) -> str:
-    resp = session.get(url, timeout=timeout)
-    if not resp.encoding or resp.encoding.lower() == "iso-8859-1":
-        resp.encoding = resp.apparent_encoding or "utf-8"
-    resp.raise_for_status()
-    return resp.text
+    try:
+        resp = session.get(url, timeout=timeout)
+        if not resp.encoding or resp.encoding.lower() == "iso-8859-1":
+            resp.encoding = resp.apparent_encoding or "utf-8"
+        resp.raise_for_status()
+        return resp.text
+    except Exception:
+        logger.exception("Failed to GET %s", url)
+        raise
 
 
 def scrape_podlodka_crew(session: Optional[requests.Session] = None, timeout: float = 15.0) -> List[Dict]:
@@ -135,6 +140,8 @@ def save_to_file(
 
 
 def main() -> None:
+    init_sentry("podlodka_parser")
+
     argp = argparse.ArgumentParser(description="Scrape Podlodka Crew conferences")
     argp.add_argument(
         "-o",
