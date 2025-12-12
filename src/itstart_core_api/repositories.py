@@ -4,9 +4,9 @@ import datetime
 from collections.abc import Iterable
 from uuid import UUID
 
-from sqlalchemy import and_, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import and_, or_, select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from itstart_domain import AdminRole, ParserType, PublicationType, TagCategory
 
@@ -55,16 +55,18 @@ class PublicationRepository(BaseRepository):
         company: str,
         vacancy_created_at: datetime.datetime | None = None,
     ) -> bool:
-        q = select(Publication).where(Publication.url == url)
-        if vacancy_created_at is not None:
+        if vacancy_created_at is None:
+            q = select(Publication).where(Publication.url == url)
+        else:
             vacancy_dt = _to_utc_naive(vacancy_created_at)
-            q = q.union_all(
-                select(Publication).where(
+            q = select(Publication).where(
+                or_(
+                    Publication.url == url,
                     and_(
                         Publication.title == title,
                         Publication.company == company,
                         Publication.vacancy_created_at == vacancy_dt,
-                    )
+                    ),
                 )
             )
         result = await self.session.execute(q.limit(1))
@@ -166,10 +168,7 @@ class SubscriptionRepository(BaseRepository):
         stmt = (
             insert(TgUserSubscriptionTag)
             .values(
-                [
-                    {"subscription_id": subscription_id, "tag_id": tag_id}
-                    for tag_id in unique_ids
-                ]
+                [{"subscription_id": subscription_id, "tag_id": tag_id} for tag_id in unique_ids]
             )
             .on_conflict_do_nothing()
         )

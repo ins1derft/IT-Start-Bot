@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import datetime
 import logging
-from uuid import UUID
 from collections.abc import Iterable
+from uuid import UUID
 
 import httpx
 from sqlalchemy import and_, delete, select
@@ -20,8 +20,8 @@ from .models import (
     TgUserSubscription,
     TgUserSubscriptionTag,
 )
-from .repositories import PublicationRepository
 from .parsing_service import run_due_parsers
+from .repositories import PublicationRepository
 
 logger = logging.getLogger(__name__)
 

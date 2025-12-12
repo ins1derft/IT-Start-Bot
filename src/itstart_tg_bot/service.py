@@ -16,7 +16,7 @@ from itstart_core_api.repositories import (
     TgUserRepository,
     UserPreferenceRepository,
 )
-from itstart_domain import PublicationType, TagCategory
+from itstart_domain import PublicationType
 
 from .config import get_settings
 
@@ -67,8 +67,6 @@ async def subscribe_tokens(session, tg_id: int, tokens: Iterable[str]):
     tag_repo = TagRepository(session)
     tags = await tag_repo.get_all()
     pub_types, tag_ids, unknown = parse_tokens(tokens, tags)
-    tag_category_by_id = {t.id: t.category for t in tags}
-    found_categories = {tag_category_by_id[tid] for tid in tag_ids if tid in tag_category_by_id}
 
     user = await ensure_user(session, tg_id)
     await session.flush()  # ensure user.id is available

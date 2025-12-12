@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-import logging
 import datetime
+import logging
 
 import sentry_sdk
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from itstart_domain import AdminRole, ParserType
 
 from .admin_users import router as admin_users_router
 from .api import router
@@ -16,16 +18,15 @@ from .db import build_engine, build_session_maker
 from .export import router as export_router
 from .metrics import middleware_factory as metrics_middleware_factory
 from .metrics import router as metrics_router
+from .models import Parser
 from .parsers import router as parsers_router
 from .publications import router as publications_router
+from .repositories import AdminUserRepository, ParserRepository
 from .schedule import router as schedule_router
 from .security import hash_password
 from .stats import router as stats_router
 from .tag_seed import TagRepository, seed_tags
 from .tags import router as tags_router
-from .repositories import AdminUserRepository, ParserRepository
-from .models import Parser
-from itstart_domain import AdminRole, ParserType
 
 logger = logging.getLogger(__name__)
 

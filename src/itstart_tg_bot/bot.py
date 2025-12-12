@@ -189,7 +189,9 @@ def _build_dispatcher() -> Dispatcher:
                 f"✅ Выбрано: {', '.join(sorted(chosen)) or 'пусто'}. Напишите ещё тип или «далее».",
             )
         else:
-            await message.answer("⚠️ Используйте jobs, internships, conferences, contests или «далее».")
+            await message.answer(
+                "⚠️ Используйте jobs, internships, conferences, contests или «далее»."
+            )
 
     @router.message(SubscribeStates.occupation)
     async def subscribe_occupation(message: types.Message, state: FSMContext) -> None:

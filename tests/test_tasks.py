@@ -8,16 +8,16 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from itstart_core_api import models
 from itstart_core_api.config import Settings
 from itstart_core_api.tasks import (
-    cleanup_old_publications,
-    run_parsers,
-    send_publication_with_session,
-    send_publication_now,
-    send_deadline_reminders,
-    send_publications,
-    _send_telegram_message,
     _eligible_subscriptions,
     _format_publication,
     _parse_publication_type,
+    _send_telegram_message,
+    cleanup_old_publications,
+    run_parsers,
+    send_deadline_reminders,
+    send_publication_now,
+    send_publication_with_session,
+    send_publications,
 )
 
 
@@ -275,12 +275,8 @@ async def test_eligible_subscriptions_respects_required_tags(monkeypatch, tmp_pa
         session.add_all([sub_ok, sub_miss])
         await session.flush()
 
-        session.add(
-            models.TgUserSubscriptionTag(subscription_id=sub_ok.id, tag_id=tag_python.id)
-        )
-        session.add(
-            models.TgUserSubscriptionTag(subscription_id=sub_miss.id, tag_id=tag_java.id)
-        )
+        session.add(models.TgUserSubscriptionTag(subscription_id=sub_ok.id, tag_id=tag_python.id))
+        session.add(models.TgUserSubscriptionTag(subscription_id=sub_miss.id, tag_id=tag_java.id))
 
         await session.commit()
 
@@ -367,7 +363,9 @@ async def test_send_publications_sends_to_channel_and_subscribers(monkeypatch, t
         session.add(user)
         await session.flush()
 
-        sub = models.TgUserSubscription(user_id=user.id, publication_type=models.PublicationType.job)
+        sub = models.TgUserSubscription(
+            user_id=user.id, publication_type=models.PublicationType.job
+        )
         session.add(sub)
         await session.commit()
 

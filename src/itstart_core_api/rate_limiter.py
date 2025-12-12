@@ -62,7 +62,7 @@ class RedisRateLimiter:
             client = self._client()
             pipe = client.pipeline()
             pipe.zremrangebyscore(redis_key, 0, window_start)
-            pipe.zadd(redis_key, {now_ms: now_ms})
+            pipe.zadd(redis_key, {str(now_ms): now_ms})
             pipe.zcard(redis_key)
             pipe.expire(redis_key, self.window)
             _, _, count, _ = await pipe.execute()

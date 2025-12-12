@@ -47,9 +47,7 @@ async def test_run_parsers_once_ingests_and_tags(tmp_path, monkeypatch):
     ]
 
     script_path.write_text(
-        "import json, sys\n"
-        f"data = {json.dumps(payload)}\n"
-        "json.dump(data, sys.stdout)\n"
+        "import json, sys\n" f"data = {json.dumps(payload)}\n" "json.dump(data, sys.stdout)\n"
     )
 
     async with Session() as session:

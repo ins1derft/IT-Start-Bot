@@ -6,8 +6,8 @@ import logging
 from typing import Any
 
 from celery import Celery
-from celery.schedules import crontab, schedule
-from celery.beat import Scheduler, ScheduleEntry
+from celery.beat import ScheduleEntry, Scheduler
+from celery.schedules import crontab
 from sentry_sdk import init as sentry_init
 from sentry_sdk.integrations.celery import CeleryIntegration
 from sqlalchemy import select
@@ -55,11 +55,15 @@ def _build_beat_schedule(settings) -> dict[str, Any]:
 
     if schedules:
         for row in schedules:
-            key = f"send-publications-{getattr(row.publication_type, 'value', row.publication_type)}"
+            key = (
+                f"send-publications-{getattr(row.publication_type, 'value', row.publication_type)}"
+            )
             schedule[key] = {
                 "task": "itstart_core_api.tasks.send_publications",
                 "schedule": datetime.timedelta(minutes=row.interval_minutes),
-                "kwargs": {"publication_type": getattr(row.publication_type, "value", row.publication_type)},
+                "kwargs": {
+                    "publication_type": getattr(row.publication_type, "value", row.publication_type)
+                },
             }
     else:
         schedule["send-publications-default"] = {
@@ -114,7 +118,9 @@ class PublicationScheduler(Scheduler):
 
         # dynamic publication send tasks
         for row in schedules:
-            key = f"send-publications-{getattr(row.publication_type, 'value', row.publication_type)}"
+            key = (
+                f"send-publications-{getattr(row.publication_type, 'value', row.publication_type)}"
+            )
             sig = self.app.tasks["itstart_core_api.tasks.send_publications"].s(
                 publication_type=getattr(row.publication_type, "value", row.publication_type)
             )

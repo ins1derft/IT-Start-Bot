@@ -99,7 +99,9 @@ async def create_publication(
 
     if payload.contact_info:
         settings = get_settings()
-        pub.contact_info_encrypted = encrypt_contact_info(payload.contact_info, settings.pgp_public_key)
+        pub.contact_info_encrypted = encrypt_contact_info(
+            payload.contact_info, settings.pgp_public_key
+        )
 
     session.add(pub)
     await session.flush()

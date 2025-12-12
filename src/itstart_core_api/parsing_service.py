@@ -7,8 +7,9 @@ import logging
 import os
 import shlex
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any
 
 import sentry_sdk
 from sqlalchemy import select
@@ -54,7 +55,7 @@ def _parse_datetime(value: Any, fallback: datetime.datetime) -> datetime.datetim
             dt = datetime.datetime.fromisoformat(value)
         except ValueError:
             return fallback
-    elif isinstance(value, (int, float)):
+    elif isinstance(value, int | float):
         dt = datetime.datetime.fromtimestamp(value)
     else:
         return fallback
@@ -124,7 +125,7 @@ async def _execute_parser_command(command: str, cwd: str | None = None) -> list[
     except json.JSONDecodeError:
         path = out_text.strip()
         if path and os.path.exists(path):
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 return json.load(f)
         raise ParserExecutionError("Parser output is not valid JSON", err_text)
 
@@ -238,7 +239,9 @@ async def run_due_parsers(
         received = 0
         saved = 0
         try:
-            items = await _execute_parser_command(parser.executable_file_path, cwd=settings.parsers_workdir)
+            items = await _execute_parser_command(
+                parser.executable_file_path, cwd=settings.parsers_workdir
+            )
             received = len(items)
             saved = await _ingest_items(session, parser, items, tags)
             parser.last_parsed_at = now
@@ -257,7 +260,9 @@ async def run_due_parsers(
         )
         await session.commit()
         stats.append(
-            ParserRunStats(parser_id=str(parser.id), success=success, received=received, saved=saved)
+            ParserRunStats(
+                parser_id=str(parser.id), success=success, received=received, saved=saved
+            )
         )
 
     return stats
